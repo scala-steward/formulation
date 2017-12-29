@@ -44,5 +44,6 @@ object Main extends App {
     "city" -> Member(option(string), _.city)
   )
 
-  println(decode[Person](encode(Person("Mark", Color.Orange, Address("Westerdijk", 4, List("Netherlands", "Belgium")), Some("Utrecht")))))
+  println(decode[Person](encode(Person("Mark", Color.Orange, Address("Scalastreet", 4, List("Netherlands", "Belgium")), Some("Utrecht")))))
+
 }
