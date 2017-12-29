@@ -91,7 +91,6 @@ object Boilerplate {
       block"""
          |package formulation
          |
-         |
          |trait AvroAlgebraRecordN[F[_]] {
          -  def record${arity}[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): F[Z]
          |}
@@ -156,7 +155,7 @@ object Boilerplate {
       import tv._
 
       val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroDecoder, $tpe, Z])"} mkString ", "
-      val applies = synTypes map { tpe => s"${tpe.toLowerCase} <- param$tpe._2.typeClass.decode(AvroDecoder.toAvroData(r.get(param$tpe._1)))"} mkString "; "
+      val applies = synTypes map { tpe => s"${tpe.toLowerCase} <- param$tpe._2.typeClass.decode(r.get(param$tpe._1))"} mkString "; "
 
       block"""
         |package formulation
@@ -164,9 +163,7 @@ object Boilerplate {
         |import org.apache.avro.generic.GenericRecord
         |
         |trait AvroDecoderRecordN { self: AvroAlgebra[AvroDecoder] =>
-        |  private def record[A](f: GenericRecord => Either[String, A]) = AvroDecoder.partial {
-        |    case AvroData.Record(record) => f(record)
-        |  }
+        |  private def record[A](f: GenericRecord => Either[Throwable, A]) = AvroDecoder.partial { case record: GenericRecord => f(record) }
         |
         -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = record { r => for { $applies } yield f(${`a..n`}) }
         |}

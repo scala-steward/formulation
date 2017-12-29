@@ -3,6 +3,9 @@ package formulation
 import cats.Contravariant
 import org.apache.avro.Schema
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound(msg = "AvroSchema[${A}] not found, did you implicitly define Avro[${A}]?")
 trait AvroSchema[A] {
   def generateSchema: Schema
 }
@@ -29,7 +32,7 @@ object AvroSchema {
 
     override def list[A](of: AvroSchema[A]): AvroSchema[List[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def pmap[A, B](fa: AvroSchema[A])(f: A => Either[String, B])(g: B => A): AvroSchema[B] = contravariant.contramap(fa)(g)
+    override def pmap[A, B](fa: AvroSchema[A])(f: A => Either[Throwable, B])(g: B => A): AvroSchema[B] = contravariant.contramap(fa)(g)
   }
 
   implicit def apply[A](implicit A: Avro[A]): AvroSchema[A] = A.apply[AvroSchema]

@@ -1,11 +1,11 @@
 package formulation
 
 import cats._
-import cats.implicits._
-
 import org.apache.avro.Schema
-import org.apache.avro.generic.GenericData
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound(msg = "AvroEncoder[${A}] not found, did you implicitly define Avro[${A}]?")
 trait AvroEncoder[A] {
   def encode(schema: Schema, value: A): Any
 }
@@ -40,7 +40,7 @@ object AvroEncoder {
     override def list[A](of: AvroEncoder[A]): AvroEncoder[List[A]] =
       AvroEncoder.create((schema, list) => list.map(of.encode(schema.getElementType, _)).asJava)
 
-    override def pmap[A, B](fa: AvroEncoder[A])(f: A => Either[String, B])(g: B => A): AvroEncoder[B] =
+    override def pmap[A, B](fa: AvroEncoder[A])(f: A => Either[Throwable, B])(g: B => A): AvroEncoder[B] =
       AvroEncoder.create((schema, b) => fa.encode(schema, g(b)))
   }
 }
