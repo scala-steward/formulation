@@ -1,7 +1,7 @@
 formulation
 ---
 
-_formulation_ is a EDSL (embedded domain specific language) for describing Avro records. Why would you like that? Well if you have a schema-registry which forbids to have incompatible schemas, you want to be explicit as possible to have the cognitive process being triggered to fix any incompatibility. While avro4s is a nice library it is too magical (through derivation) and defining custom types is a bit verbose.
+_formulation_ is a EDSL (embedded domain specific language) for describing Avro records. Why would you like that? Well if you have a schema-registry which forbids to have incompatible schemas, you want to be explicit as possible to have the cognitive process being triggered to fix any incompatibility. While avro4s is a nice library it is too magical (because of derivation) and defining custom types is a bit verbose.
 
 ## How does it look like ?
 
@@ -40,7 +40,7 @@ object Main extends App {
   def enum[A](implicit E: Enum[A]) =
     string.pmap(str => E.allValues.find(x => E.asString(x) == str).fold[Either[Throwable, A]](Left(new Throwable(s"Value $str not found")))(Right.apply))(E.asString)
 
-  implicit val address: Avro[Address] = record3(namespace = "forma", name = "Address")(Address.apply)(
+  implicit val address: Avro[Address] = record2(namespace = "forma", name = "Address")(Address.apply)(
     "street" -> Member(string, _.street),
     "houseNumber" -> Member(int, _.houseNumber, defaultValue = 0)
   )
