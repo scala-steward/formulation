@@ -1,6 +1,5 @@
 package formulation
 
-import cats._
 import org.apache.avro.Schema
 
 import scala.annotation.implicitNotFound
@@ -20,9 +19,6 @@ object AvroEncoder {
 
   implicit def apply[A](implicit A: Avro[A]): AvroEncoder[A] = A.apply[AvroEncoder]
 
-  implicit val contravariant: Contravariant[AvroEncoder] = new Contravariant[AvroEncoder] {
-    override def contramap[A, B](fa: AvroEncoder[A])(f: B => A): AvroEncoder[B] = create((schema, b) => f(b))
-  }
 
   implicit val interpreter: AvroAlgebra[AvroEncoder] = new AvroAlgebra[AvroEncoder] with AvroEncoderRecordN {
 

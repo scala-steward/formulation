@@ -1,8 +1,6 @@
 package formulation
 
-import cats.Invariant
-
-trait AvroAlgebra[F[_]] extends Invariant[F] with AvroAlgebraRecordN[F] {
+trait AvroAlgebra[F[_]] extends AvroAlgebraRecordN[F] {
   val int: F[Int]
   val string: F[String]
 //  val bool: F[Boolean]
@@ -21,4 +19,5 @@ trait AvroAlgebra[F[_]] extends Invariant[F] with AvroAlgebraRecordN[F] {
 //  def map[V](value: F[V]): F[Map[String, V]]
 
   def pmap[A,B](fa: F[A])(f: A => Either[Throwable, B])(g: B => A): F[B]
+  def imap[A,B](fa: F[A])(f: A => B)(g: B => A): F[B]
 }

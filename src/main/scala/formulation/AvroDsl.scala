@@ -4,8 +4,6 @@ import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-import cats._
-
 import scala.util.control.NonFatal
 
 trait Avro[A] {
@@ -50,12 +48,9 @@ trait AvroDsl extends AvroDslRecordN { self =>
     override def apply[F[_] : AvroAlgebra]: F[List[A]] = implicitly[AvroAlgebra[F]].list(of.apply[F])
   }
 
-  implicit val invariant: Invariant[Avro] = new Invariant[Avro] {
-    override def imap[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] = self.imap(fa)(f)(g)
-  }
-
-  implicit class RichAvro[A](val avro: Avro[A]) {
-    def pmap[B](f: A => Either[Throwable, B])(g: B => A): Avro[B] = self.pmap(avro)(f)(g)
-    def pmapUnsafe[B](f: A => B)(g: B => A): Avro[B] = self.pmapUnsafe(avro)(f)(g)
+  implicit class RichAvro[A](val fa: Avro[A]) {
+    def imap[B](f: A => B)(g: B => A): Avro[B] = self.imap(fa)(f)(g)
+    def pmap[B](f: A => Either[Throwable, B])(g: B => A): Avro[B] = self.pmap(fa)(f)(g)
+    def pmapUnsafe[B](f: A => B)(g: B => A): Avro[B] = self.pmapUnsafe(fa)(f)(g)
   }
 }

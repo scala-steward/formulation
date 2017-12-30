@@ -110,8 +110,6 @@ object Boilerplate {
       block"""
         |package formulation
         |
-        |import cats._
-        |
         |trait AvroDslRecordN {
         |  private def naturalTransformation[G[_] : AvroAlgebra]: (Avro ~> G) = new (Avro ~> G) {
         |    override def apply[A](fa: Avro[A]): G[A] = fa.apply[G]
@@ -137,7 +135,6 @@ object Boilerplate {
         |import org.apache.avro.Schema
         |import org.apache.avro.Schema.Field
         |
-        |import cats._
         |import scala.collection.JavaConverters._
         |
         |trait AvroSchemaRecordN { self: AvroAlgebra[AvroSchema] =>

@@ -1,6 +1,5 @@
 package formulation
 
-import cats.implicits._
 import org.apache.avro.util.Utf8
 
 import scala.annotation.implicitNotFound
@@ -35,7 +34,9 @@ object AvroDecoder {
     }
 
     override def list[A](of: AvroDecoder[A]): AvroDecoder[List[A]] =
-      partial { case x: java.util.Collection[_] => x.asScala.toList.traverse[Either[Throwable, ?], A](of.decode) }
+      partial { case x: java.util.Collection[_] =>
+        Traverse.listInstance.traverse[Either[Throwable, ?], Any, A](x.asScala.toList)(of.decode)
+      }
 
     override def pmap[A, B](fa: AvroDecoder[A])(f: A => Either[Throwable, B])(g: B => A): AvroDecoder[B] = new AvroDecoder[B] {
       override def decode(data: Any): Either[Throwable, B] = fa.decode(data).flatMap(f)
