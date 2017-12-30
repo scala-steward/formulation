@@ -10,11 +10,7 @@ trait Functor[F[_]] {
 }
 
 trait Traverse[F[_]] extends Functor[F] {
-
   def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
-
-  def sequence[G[_]: Applicative, A](fa: F[G[A]]): G[F[A]] =
-    traverse(fa)(identity)
 }
 
 object Traverse {
@@ -26,9 +22,7 @@ object Traverse {
       }
     }
   }
-
 }
-
 
 trait Applicative[F[_]] extends Functor[F] {
   def pure[A](a: A): F[A]
@@ -44,6 +38,30 @@ object Applicative {
     override def ap[A, B](fa: Either[L, A])(f: Either[L, A => B]): Either[L, B] = f.flatMap(ff => fa.map(ff))
     override def map[A, B](fa: Either[L, A])(f: A => B): Either[L, B] = fa.map(f)
   }
+
+  implicit val attempt: Applicative[Attempt] = new Applicative[Attempt] {
+    override def pure[A](a: A): Attempt[A] = Attempt.Success(a)
+    override def ap[A, B](fa: Attempt[A])(f: Attempt[A => B]): Attempt[B] = f.flatMap(ff => fa.map(ff))
+    override def map[A, B](fa: Attempt[A])(f: A => B): Attempt[B] = fa.map(f)
+  }
+}
+
+
+sealed trait Attempt[+A] { self =>
+  def flatMap[B](f: A => Attempt[B]): Attempt[B] = self match {
+    case Attempt.Success(value) => f(value)
+    case Attempt.Error(error) => Attempt.Error(error)
+  }
+
+  def map[B](f: A => B): Attempt[B] = self match {
+    case Attempt.Success(value) => Attempt.Success(f(value))
+    case Attempt.Error(error) => Attempt.Error(error)
+  }
+}
+
+object Attempt {
+  final case class Success[A](value: A) extends Attempt[A]
+  final case class Error(error: Throwable) extends Attempt[Nothing]
 }
 
 

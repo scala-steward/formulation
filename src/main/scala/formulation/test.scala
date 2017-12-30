@@ -30,7 +30,7 @@ case class Person(name: String, favoriteColor: Color, address: Address, city: Op
 object Main extends App {
 
   def enum[A](implicit E: Enum[A]) =
-    string.pmap(str => E.allValues.find(x => E.asString(x) == str).fold[Either[Throwable, A]](Left(new Throwable(s"Value $str not found")))(Right.apply))(E.asString)
+    string.pmap(str => E.allValues.find(x => E.asString(x) == str).fold[Attempt[A]](Attempt.Error(new Throwable(s"Value $str not found")))(Attempt.Success.apply))(E.asString)
 
   implicit val address: Avro[Address] = record3("forma", "Address")(Address.apply)(
     "street" -> Member(string, _.street),

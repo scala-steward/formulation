@@ -18,6 +18,6 @@ trait AvroAlgebra[F[_]] extends AvroAlgebraRecordN[F] {
 //  def array[A](of: F[A]): F[Array[A]]
 //  def map[V](value: F[V]): F[Map[String, V]]
 
-  def pmap[A,B](fa: F[A])(f: A => Either[Throwable, B])(g: B => A): F[B]
+  def pmap[A,B](fa: F[A])(f: A => Attempt[B])(g: B => A): F[B]
   def imap[A,B](fa: F[A])(f: A => B)(g: B => A): F[B]
 }

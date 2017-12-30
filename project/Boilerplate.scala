@@ -160,7 +160,7 @@ object Boilerplate {
         |import org.apache.avro.generic.GenericRecord
         |
         |trait AvroDecoderRecordN { self: AvroAlgebra[AvroDecoder] =>
-        |  private def record[A](f: GenericRecord => Either[Throwable, A]) = AvroDecoder.partial { case record: GenericRecord => f(record) }
+        |  private def record[A](f: GenericRecord => Attempt[A]) = AvroDecoder.partial { case record: GenericRecord => f(record) }
         |
         -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = record { r => for { $applies } yield f(${`a..n`}) }
         |}

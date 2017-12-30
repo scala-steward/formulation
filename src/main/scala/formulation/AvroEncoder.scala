@@ -36,7 +36,7 @@ object AvroEncoder {
     override def list[A](of: AvroEncoder[A]): AvroEncoder[List[A]] =
       AvroEncoder.create((schema, list) => list.map(of.encode(schema.getElementType, _)).asJava)
 
-    override def pmap[A, B](fa: AvroEncoder[A])(f: A => Either[Throwable, B])(g: B => A): AvroEncoder[B] =
+    override def pmap[A, B](fa: AvroEncoder[A])(f: A => Attempt[B])(g: B => A): AvroEncoder[B] =
       AvroEncoder.create((schema, b) => fa.encode(schema, g(b)))
   }
 }

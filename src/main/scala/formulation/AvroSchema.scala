@@ -31,7 +31,7 @@ object AvroSchema {
 
     override def list[A](of: AvroSchema[A]): AvroSchema[List[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def pmap[A, B](fa: AvroSchema[A])(f: A => Either[Throwable, B])(g: B => A): AvroSchema[B] = by(fa)(g)
+    override def pmap[A, B](fa: AvroSchema[A])(f: A => Attempt[B])(g: B => A): AvroSchema[B] = by(fa)(g)
   }
 
   implicit def apply[A](implicit A: Avro[A]): AvroSchema[A] = A.apply[AvroSchema]
