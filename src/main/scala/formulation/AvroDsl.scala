@@ -38,7 +38,7 @@ trait AvroDsl extends AvroDslRecordN { self =>
   }
 
   def pmapUnsafe[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] =
-    pmap(fa)(a => try Attempt.Success(f(a)) catch { case NonFatal(ex) => Attempt.Error(ex)})(g)
+    pmap(fa)(a => try Attempt.Success(f(a)) catch { case NonFatal(ex) => Attempt.exception(ex)})(g)
 
   def option[A](value: Avro[A]): Avro[Option[A]] = new Avro[Option[A]] {
     override def apply[F[_] : AvroAlgebra]: F[Option[A]] = implicitly[AvroAlgebra[F]].option(value.apply[F])

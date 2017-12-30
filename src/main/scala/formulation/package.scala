@@ -43,7 +43,7 @@ package object formulation extends AvroDsl {
       R.decode(record)
     }
     catch {
-      case NonFatal(ex) => Attempt.Error(ex)
+      case NonFatal(ex) => Attempt.exception(ex)
     }
     finally {
       in.close()

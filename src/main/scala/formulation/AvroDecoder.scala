@@ -14,7 +14,7 @@ object AvroDecoder {
   import scala.collection.JavaConverters._
 
   def partial[A](f: PartialFunction[Any, Attempt[A]]): AvroDecoder[A] = new AvroDecoder[A] {
-    override def decode(data: Any): Attempt[A] = f.applyOrElse(data, (x: Any) => Attempt.Error(new Throwable(s"Unexpected $x")))
+    override def decode(data: Any): Attempt[A] = f.applyOrElse(data, (x: Any) => Attempt.error(s"Unexpected '$x' (class: ${x.getClass})"))
   }
 
   implicit val interpreter: AvroAlgebra[AvroDecoder] = new AvroAlgebra[AvroDecoder] with AvroDecoderRecordN {
@@ -35,7 +35,7 @@ object AvroDecoder {
 
     override def list[A](of: AvroDecoder[A]): AvroDecoder[List[A]] =
       partial { case x: java.util.Collection[_] =>
-        Traverse.listInstance.traverse[Attempt[?], Any, A](x.asScala.toList)(of.decode)
+        Traverse.listInstance.traverse[Attempt, Any, A](x.asScala.toList)(of.decode)
       }
 
     override def pmap[A, B](fa: AvroDecoder[A])(f: A => Attempt[B])(g: B => A): AvroDecoder[B] = new AvroDecoder[B] {

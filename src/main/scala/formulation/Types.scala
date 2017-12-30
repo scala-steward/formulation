@@ -1,5 +1,7 @@
 package formulation
 
+import scala.util.Try
+
 
 trait ~>[F[_], G[_]] {
   def apply[A](fa: F[A]): G[A]
@@ -33,12 +35,6 @@ object Applicative {
   private[formulation] def map2[F[_],A,B,C](fa: F[A], fb: F[B])(f: (A, B) => C)(implicit F: Applicative[F]): F[C] =
     F.ap(fb)(F.ap(fa)(F.pure(f.curried)))
 
-  implicit def either[L]: Applicative[Either[L, ?]] = new Applicative[Either[L, ?]] {
-    override def pure[A](a: A): Either[L, A] = Right(a)
-    override def ap[A, B](fa: Either[L, A])(f: Either[L, A => B]): Either[L, B] = f.flatMap(ff => fa.map(ff))
-    override def map[A, B](fa: Either[L, A])(f: A => B): Either[L, B] = fa.map(f)
-  }
-
   implicit val attempt: Applicative[Attempt] = new Applicative[Attempt] {
     override def pure[A](a: A): Attempt[A] = Attempt.Success(a)
     override def ap[A, B](fa: Attempt[A])(f: Attempt[A => B]): Attempt[B] = f.flatMap(ff => fa.map(ff))
@@ -62,6 +58,25 @@ sealed trait Attempt[+A] { self =>
 object Attempt {
   final case class Success[A](value: A) extends Attempt[A]
   final case class Error(error: Throwable) extends Attempt[Nothing]
+
+  def exception(ex: Throwable): Attempt[Nothing] = Attempt.Error(ex)
+  def error(msg: String): Attempt[Nothing] = Attempt.Error(new Throwable(msg))
+  def success[A](value: A): Attempt[A] = Attempt.Success(value)
+
+  def fromEither[A](either: Either[Throwable, A]): Attempt[A] = either match {
+    case Left(err) => exception(err)
+    case Right(value) => success(value)
+  }
+
+  def fromTry[A](t: Try[A]): Attempt[A] = t match {
+    case scala.util.Failure(err) => exception(err)
+    case scala.util.Success(value) => success(value)
+  }
+
+  def fromOption[A](ifEmpty: String)(option: Option[A]): Attempt[A] = option match {
+    case None => error(ifEmpty)
+    case Some(value) => success(value)
+  }
 }
 
 
