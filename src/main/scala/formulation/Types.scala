@@ -7,36 +7,21 @@ trait ~>[F[_], G[_]] {
   def apply[A](fa: F[A]): G[A]
 }
 
-trait Functor[F[_]] {
-  def map[A, B](fa: F[A])(f: A => B): F[B]
-}
-
-trait Traverse[F[_]] extends Functor[F] {
+trait Traverse[F[_]] {
   def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
 }
 
 object Traverse {
   val listInstance: Traverse[List] = new Traverse[List] {
-    def map[A,B](l: List[A])(f: A => B): List[B] = l map f
     def traverse[G[_], A, B](l: List[A])(f: A => G[B])(implicit G: Applicative[G]): G[List[B]] = {
       l.foldRight(G.pure(List.empty[B])) {
         (hd, init) => Applicative.map2(f(hd), init)(_ :: _)
       }
     }
   }
-
-  def mapInstance[K]: Traverse[Map[K, ?]] = new Traverse[Map[K, ?]] {
-    override def traverse[G[_], A, B](fa: Map[K, A])(f: A => G[B])(implicit G: Applicative[G]): G[Map[K, B]] = {
-      fa.foldRight(G.pure(Map.empty[K, B])) {
-        case (hd, init) => Applicative.map2(f(hd._2), init) { case (b, acc) => acc + (hd._1 -> b) }
-      }
-    }
-
-    override def map[A, B](fa: Map[K, A])(f: A => B): Map[K, B] = fa mapValues f
-  }
 }
 
-trait Applicative[F[_]] extends Functor[F] {
+trait Applicative[F[_]] {
   def pure[A](a: A): F[A]
   def ap[A,B](fa: F[A])(f: F[A => B]): F[B]
 }
@@ -45,10 +30,12 @@ object Applicative {
   private[formulation] def map2[F[_],A,B,C](fa: F[A], fb: F[B])(f: (A, B) => C)(implicit F: Applicative[F]): F[C] =
     F.ap(fb)(F.ap(fa)(F.pure(f.curried)))
 
+  private[formulation] def map3[F[_],A,B,C, D](fa: F[A], fb: F[B], fc: F[C])(f: (A, B, C) => D)(implicit F: Applicative[F]): F[D] =
+    F.ap(fc)(F.ap(fb)(F.ap(fa)(F.pure(f.curried))))
+
   implicit val attempt: Applicative[Attempt] = new Applicative[Attempt] {
     override def pure[A](a: A): Attempt[A] = Attempt.Success(a)
     override def ap[A, B](fa: Attempt[A])(f: Attempt[A => B]): Attempt[B] = f.flatMap(ff => fa.map(ff))
-    override def map[A, B](fa: Attempt[A])(f: A => B): Attempt[B] = fa.map(f)
   }
 }
 

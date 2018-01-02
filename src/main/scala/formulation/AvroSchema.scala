@@ -51,7 +51,7 @@ object AvroSchema {
 
     override def seq[A](of: AvroSchema[A]): AvroSchema[Seq[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def map[V](value: AvroSchema[V]): AvroSchema[Map[String, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
+    override def map[K, V](value: AvroSchema[V], contramapKey: K => String, mapKey: String => Attempt[K]): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
   }
 
   implicit def apply[A](implicit A: Avro[A]): AvroSchema[A] = A.apply[AvroSchema]
