@@ -31,7 +31,8 @@ before_install:
  - export PATH=${PATH}:./vendor/bundle
 
 script:
-  - scripts/travis-publish.sh
+  - sbt coverage test coverageReport
+  - codecov
 
 install:
   - pip install --user codecov
