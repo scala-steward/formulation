@@ -1,6 +1,10 @@
 formulation
 ---
 
+
+[![Build Status](https://api.travis-ci.org/vectos/formulation.svg)](https://travis-ci.org/vectos/formulation)
+[![codecov.io](http://codecov.io/github/vectos/formulation/coverage.svg?branch=master)](http://codecov.io/github/vectos/formulation?branch=master)
+
 _formulation_ is a EDSL (embedded domain specific language) for describing Avro records. Why would you like that? Well if you have a schema-registry which forbids to have incompatible schemas, you want to be explicit as possible to have the cognitive process being triggered to fix any incompatibility. While avro4s is a nice library it is too magical (because of derivation) and defining custom types is a bit verbose.
 
 ## How does it look like ?

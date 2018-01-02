@@ -1,5 +1,7 @@
 package formulation
 
+import java.time.LocalDateTime
+
 sealed abstract class Color(val repr: String)
 
 object Color {
@@ -25,7 +27,7 @@ object Enum {
 }
 
 case class Address(street: String, houseNumber: Int, countries: List[String], more: Set[BigDecimal])
-case class Person(name: String, favoriteColor: Color, address: Address, city: Option[String], shit: Vector[Address])
+case class Person(name: String, favoriteColor: Color, address: Address, city: Option[String], shit: Vector[Address], date: LocalDateTime)
 
 object Main extends App {
 
@@ -38,14 +40,19 @@ object Main extends App {
     "countries" -> Member(list(string), _.countries, Some(Nil)),
     "more" -> Member(set(bigDecimal(2, 7)), _.more)
   )
-  implicit val person: Avro[Person] = record5("forma", "Person")(Person.apply)(
+  implicit val person: Avro[Person] = record6("forma", "Person")(Person.apply)(
     "name" -> Member(string, _.name),
     "favoriteColor" -> Member(enum[Color], _.favoriteColor),
     "address" -> Member(address, _.address),
     "city" -> Member(option(string), _.city),
-    "shit" -> Member(vector(address), _.shit)
+    "shit" -> Member(vector(address), _.shit),
+    "date" -> Member(localDateTime, _.date)
   )
 
-  println(decode[Person](encode(Person("Mark", Color.Orange, Address("Scalastreet", 4, List("Netherlands", "Belgium"), Set(11, 22)), Some("Utrecht"), Vector(Address("test", 11, Nil, Set()))))))
+  val schema = AvroSchema[Person]
+
+  println(schema.generateSchema.toString(true))
+
+  println(decode[Person](encode(Person("Mark", Color.Orange, Address("Scalastreet", 4, List("Netherlands", "Belgium"), Set(11, 22)), Some("Utrecht"), Vector(Address("test", 11, Nil, Set())), LocalDateTime.now()))))
 
 }
