@@ -68,6 +68,6 @@ object AvroEncoder {
     override def seq[A](of: AvroEncoder[A]): AvroEncoder[Seq[A]] = by(list(of))(_.toList)
 
     override def map[V](of: AvroEncoder[V]): AvroEncoder[Map[String, V]] =
-      AvroEncoder.create((schema, v) => v.mapValues(of.encode(schema.getElementType, _)).asJava)
+      AvroEncoder.create((schema, v) => v.mapValues(of.encode(schema.getValueType, _)).asJava)
   }
 }
