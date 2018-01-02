@@ -5,7 +5,6 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import scala.util.Try
-import scala.util.control.NonFatal
 
 trait Avro[A] {
   def apply[F[_] : AvroAlgebra]: F[A]
@@ -19,6 +18,30 @@ trait AvroDsl extends AvroDslRecordN { self =>
 
   val string: Avro[String] = new Avro[String] {
     override def apply[F[_] : AvroAlgebra]: F[String] = implicitly[AvroAlgebra[F]].string
+  }
+
+  val bool: Avro[Boolean] = new Avro[Boolean] {
+    override def apply[F[_] : AvroAlgebra]: F[Boolean] = implicitly[AvroAlgebra[F]].bool
+  }
+
+  val long: Avro[Long] = new Avro[Long] {
+    override def apply[F[_] : AvroAlgebra]: F[Long] = implicitly[AvroAlgebra[F]].long
+  }
+
+  val double: Avro[Double] = new Avro[Double] {
+    override def apply[F[_] : AvroAlgebra]: F[Double] = implicitly[AvroAlgebra[F]].double
+  }
+
+  val float: Avro[Float] = new Avro[Float] {
+    override def apply[F[_] : AvroAlgebra]: F[Float] = implicitly[AvroAlgebra[F]].float
+  }
+
+  val byteArray: Avro[Array[Byte]] = new Avro[Array[Byte]] {
+    override def apply[F[_] : AvroAlgebra]: F[Array[Byte]] = implicitly[AvroAlgebra[F]].byteArray
+  }
+
+  def bigDecimal(scale: Int = 2, precision: Int = 7): Avro[BigDecimal] = new Avro[BigDecimal] {
+    override def apply[F[_] : AvroAlgebra]: F[BigDecimal] = implicitly[AvroAlgebra[F]].bigDecimal(scale, precision)
   }
 
   val uuid: Avro[UUID] =
@@ -44,6 +67,18 @@ trait AvroDsl extends AvroDslRecordN { self =>
 
   def list[A](of: Avro[A]): Avro[List[A]] = new Avro[List[A]] {
     override def apply[F[_] : AvroAlgebra]: F[List[A]] = implicitly[AvroAlgebra[F]].list(of.apply[F])
+  }
+
+  def set[A](of: Avro[A]): Avro[Set[A]] = new Avro[Set[A]] {
+    override def apply[F[_] : AvroAlgebra]: F[Set[A]] = implicitly[AvroAlgebra[F]].set(of.apply[F])
+  }
+
+  def vector[A](of: Avro[A]): Avro[Vector[A]] = new Avro[Vector[A]] {
+    override def apply[F[_] : AvroAlgebra]: F[Vector[A]] = implicitly[AvroAlgebra[F]].vector(of.apply[F])
+  }
+
+  def seq[A](of: Avro[A]): Avro[Seq[A]] = new Avro[Seq[A]] {
+    override def apply[F[_] : AvroAlgebra]: F[Seq[A]] = implicitly[AvroAlgebra[F]].seq(of.apply[F])
   }
 
   implicit class RichAvro[A](val fa: Avro[A]) {

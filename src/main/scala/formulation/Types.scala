@@ -16,13 +16,23 @@ trait Traverse[F[_]] extends Functor[F] {
 }
 
 object Traverse {
-  implicit val listInstance: Traverse[List] = new Traverse[List] {
+  val listInstance: Traverse[List] = new Traverse[List] {
     def map[A,B](l: List[A])(f: A => B): List[B] = l map f
     def traverse[G[_], A, B](l: List[A])(f: A => G[B])(implicit G: Applicative[G]): G[List[B]] = {
       l.foldRight(G.pure(List.empty[B])) {
         (hd, init) => Applicative.map2(f(hd), init)(_ :: _)
       }
     }
+  }
+
+  def mapInstance[K]: Traverse[Map[K, ?]] = new Traverse[Map[K, ?]] {
+    override def traverse[G[_], A, B](fa: Map[K, A])(f: A => G[B])(implicit G: Applicative[G]): G[Map[K, B]] = {
+      fa.foldRight(G.pure(Map.empty[K, B])) {
+        case (hd, init) => Applicative.map2(f(hd._2), init) { case (b, acc) => acc + (hd._1 -> b) }
+      }
+    }
+
+    override def map[A, B](fa: Map[K, A])(f: A => B): Map[K, B] = fa mapValues f
   }
 }
 
@@ -52,6 +62,16 @@ sealed trait Attempt[+A] { self =>
   def map[B](f: A => B): Attempt[B] = self match {
     case Attempt.Success(value) => Attempt.Success(f(value))
     case Attempt.Error(error) => Attempt.Error(error)
+  }
+
+  def toEither: Either[Throwable, A] = self match {
+    case Attempt.Success(value) => Right(value)
+    case Attempt.Error(err) => Left(err)
+  }
+
+  def toOption: Option[A] = self match {
+    case Attempt.Success(value) => Some(value)
+    case Attempt.Error(err) => None
   }
 }
 
