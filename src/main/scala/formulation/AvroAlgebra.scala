@@ -15,7 +15,7 @@ trait AvroAlgebra[F[_]] extends AvroAlgebraRecordN[F] {
   def set[A](of: F[A]): F[Set[A]]
   def vector[A](of: F[A]): F[Vector[A]]
   def seq[A](of: F[A]): F[Seq[A]]
-  def map[V](value: F[V]): F[Map[String, V]]
+  def map[K, V](value: F[V], contramapKey: K => String, mapKey: String => Attempt[K]): F[Map[K, V]]
 
   def pmap[A,B](fa: F[A])(f: A => Attempt[B])(g: B => A): F[B]
   def imap[A,B](fa: F[A])(f: A => B)(g: B => A): F[B]

@@ -71,7 +71,7 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
     }
     "work with Map" in {
       forAll { (a: Map[String, Int]) =>
-        whenever(a.keySet.forall(_.nonEmpty)) { assert(a, map(int)) }
+        whenever(a.keySet.forall(_.nonEmpty)) { assert(a, map[String, Int](int, identity, Attempt.success)) }
       }
     }
   }

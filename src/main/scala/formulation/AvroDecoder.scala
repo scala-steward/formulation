@@ -29,11 +29,12 @@ object AvroDecoder {
 
     override val int: AvroDecoder[Int] = partial { case v: Int => Attempt.success(v) }
     override val string: AvroDecoder[String] = partial { case v: Utf8 => Attempt.success(v.toString) }
-    override val bool: AvroDecoder[Boolean] =  partial { case v: Boolean => Attempt.success(v) }
+    override val bool: AvroDecoder[Boolean] = partial { case v: Boolean => Attempt.success(v) }
     override val float: AvroDecoder[Float] = partial { case v: Float => Attempt.success(v) }
     override val byteArray: AvroDecoder[Array[Byte]] = partial[Array[Byte]] { case v: ByteBuffer => Attempt.success(v.array()) }
     override val double: AvroDecoder[Double] = partial { case v: Double => Attempt.success(v) }
     override val long: AvroDecoder[Long] = partial { case v: Long => Attempt.success(v) }
+
     override def bigDecimal(scale: Int, precision: Int): AvroDecoder[BigDecimal] = partial[BigDecimal] { case v: ByteBuffer =>
 
       val decimalType = LogicalTypes.decimal(precision, scale)
@@ -70,9 +71,14 @@ object AvroDecoder {
     override def seq[A](of: AvroDecoder[A]): AvroDecoder[Seq[A]] =
       list(of).map(_.toSeq)
 
-    override def map[V](of: AvroDecoder[V]): AvroDecoder[Map[String, V]] =
-      partial { case x: java.util.Map[_,_] =>
-        Traverse.mapInstance[String].traverse[Attempt, Any, V](x.asScala.toMap.map { case (k, v) => k.toString -> v })(of.decode)
+    override def map[K, V](of: AvroDecoder[V], contramapKey: K => String, mapKey: String => Attempt[K]): AvroDecoder[Map[K, V]] =
+      partial { case x: java.util.Map[_, _] =>
+        x.asScala
+          .toMap
+          .map { case (k, v) => k.toString -> v }
+          .foldRight(Attempt.success(Map.empty) : Attempt[Map[K, V]]) { case ((key, value), init) =>
+            Applicative.map3(mapKey(key), of.decode(value), init) { case (k, v, acc) => acc + (k -> v) }
+          }
       }
 
     override def pmap[A, B](fa: AvroDecoder[A])(f: A => Attempt[B])(g: B => A): AvroDecoder[B] = new AvroDecoder[B] {

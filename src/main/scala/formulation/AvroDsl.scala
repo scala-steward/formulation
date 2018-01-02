@@ -81,8 +81,8 @@ trait AvroDsl extends AvroDslRecordN { self =>
     override def apply[F[_] : AvroAlgebra]: F[Seq[A]] = implicitly[AvroAlgebra[F]].seq(of.apply[F])
   }
 
-  def map[A](of: Avro[A]): Avro[Map[String, A]] = new Avro[Map[String, A]] {
-    override def apply[F[_] : AvroAlgebra]: F[Map[String, A]] = implicitly[AvroAlgebra[F]].map(of.apply[F])
+  def map[K, V](of: Avro[V], contramapKey: K => String, mapKey: String => Attempt[K]): Avro[Map[K, V]] = new Avro[Map[K, V]] {
+    override def apply[F[_] : AvroAlgebra]: F[Map[K, V]] = implicitly[AvroAlgebra[F]].map(of.apply[F], contramapKey, mapKey)
   }
 
   implicit class RichAvro[A](val fa: Avro[A]) {
