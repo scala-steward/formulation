@@ -40,7 +40,7 @@ trait AvroDsl extends AvroDslRecordN { self =>
     override def apply[F[_] : AvroAlgebra]: F[Array[Byte]] = implicitly[AvroAlgebra[F]].byteArray
   }
 
-  def bigDecimal(scale: Int = 2, precision: Int = 7): Avro[BigDecimal] = new Avro[BigDecimal] {
+  def bigDecimal(scale: Int = 2, precision: Int = 8): Avro[BigDecimal] = new Avro[BigDecimal] {
     override def apply[F[_] : AvroAlgebra]: F[BigDecimal] = implicitly[AvroAlgebra[F]].bigDecimal(scale, precision)
   }
 
@@ -79,6 +79,10 @@ trait AvroDsl extends AvroDslRecordN { self =>
 
   def seq[A](of: Avro[A]): Avro[Seq[A]] = new Avro[Seq[A]] {
     override def apply[F[_] : AvroAlgebra]: F[Seq[A]] = implicitly[AvroAlgebra[F]].seq(of.apply[F])
+  }
+
+  def map[A](of: Avro[A]): Avro[Map[String, A]] = new Avro[Map[String, A]] {
+    override def apply[F[_] : AvroAlgebra]: F[Map[String, A]] = implicitly[AvroAlgebra[F]].map(of.apply[F])
   }
 
   implicit class RichAvro[A](val fa: Avro[A]) {
