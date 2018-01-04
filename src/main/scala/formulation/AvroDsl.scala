@@ -1,6 +1,6 @@
 package formulation
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time._
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
@@ -53,12 +53,14 @@ trait AvroDsl extends AvroDslRecordN { self =>
   val uuid: Avro[UUID] =
     string.pmap(str => Attempt.fromTry(Try(UUID.fromString(str))))(_.toString)
 
+  val instant: Avro[Instant] =
+    long.pmap(ts => Attempt.fromTry(Try(Instant.ofEpochMilli(ts))))(_.toEpochMilli)
+
   val localDate: Avro[LocalDate] =
     string.pmap(str => Attempt.fromTry(Try(LocalDate.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE))
 
   val localDateTime: Avro[LocalDateTime] =
     string.pmap(str => Attempt.fromTry(Try(LocalDateTime.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-
 
   def imap[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] = new Avro[B] {
     override def apply[F[_] : AvroAlgebra]: F[B] = implicitly[AvroAlgebra[F]].imap(fa.apply[F])(f)(g)

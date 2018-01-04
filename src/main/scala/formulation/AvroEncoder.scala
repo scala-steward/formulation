@@ -28,22 +28,6 @@ object AvroEncoder {
     override def encode(schema: Schema, value: A): Any = f(schema, value)
   }
 
-  def debug[A](text: String)(encoder: AvroEncoder[A]): AvroEncoder[A] = new AvroEncoder[A](encoder.name) {
-    override def encode(schema: Schema, value: A): Any = {
-      println(s"Debug AvroEncoder - $text")
-      println("--")
-      println(s"schema: ${schema.toString}")
-      println(s"value: $value")
-
-      val result = encoder.encode(schema, value)
-
-      println(s"result: $result")
-      println("---")
-
-      result
-    }
-  }
-
   implicit def apply[A](implicit A: Avro[A]): AvroEncoder[A] = A.apply[AvroEncoder]
 
   implicit val interpreter: AvroAlgebra[AvroEncoder] = new AvroAlgebra[AvroEncoder] with AvroEncoderRecordN {

@@ -73,8 +73,6 @@ object AvroDefaultValuePrinter {
       case Right(right) => fb.print(right)
     }
   }
-
-  implicit def apply[A](implicit A: Avro[A]): AvroDefaultValuePrinter[A] = A.apply[AvroDefaultValuePrinter]
 }
 
 
