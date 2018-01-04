@@ -20,11 +20,6 @@ object AvroSchemaCompatibility {
       case (false, false) => NotCompatible
     }
 
-  def isReadable(target: Schema, comparison: Schema): Boolean = {
-    val compatibility = apply(target, comparison)
-    compatibility == Full || compatibility == Backward
-  }
-
   private def isCompatible(target: Schema)(comparison: Schema): Boolean =
     SchemaCompatibility.checkReaderWriterCompatibility(target, comparison).getType == COMPATIBLE
 }

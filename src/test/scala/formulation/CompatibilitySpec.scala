@@ -1,24 +1,32 @@
 package formulation
 
+import cats.syntax.writer
 import org.scalatest.{Matchers, WordSpec}
 
 class CompatibilitySpec extends WordSpec with Matchers {
 
+  implicit val generic: Avro[Generic[Int]] = record1("user", "User")(Generic.apply[Int])("bla" -> member(int, _.value))
+
   val v1 = AvroSchema[UserV1].generateSchema
   val v2 = AvroSchema[UserV2].generateSchema
   val v3 = AvroSchema[UserV3].generateSchema
+  val genericSchema = AvroSchema[Generic[Int]].generateSchema
 
   "Compatiblity" should {
-    "return FullCompatible for UserV1 and UserV2 - defaults given" in {
+    "return Full for UserV1 and UserV2 - defaults given" in {
       AvroSchemaCompatibility(writer = v1, reader = v2) shouldBe AvroSchemaCompatibility.Full
     }
 
-    "return ForwardCompatible for UserV1 and UserV3 - no defaults" in {
+    "return Foward for UserV1 and UserV3 - no defaults" in {
       AvroSchemaCompatibility(writer = v1, reader = v3) shouldBe AvroSchemaCompatibility.Forward
     }
 
-    "return BackwardCompatible for UserV1 and UserV3 - no defaults" in {
+    "return Backward for UserV1 and UserV3 - no defaults" in {
       AvroSchemaCompatibility(writer = v3, reader = v1) shouldBe AvroSchemaCompatibility.Backward
+    }
+
+    "return NotCompatible for UserV1 and Generic" in {
+      AvroSchemaCompatibility(writer = v3, reader = genericSchema) shouldBe AvroSchemaCompatibility.NotCompatible
     }
 
     "work while encoding as V1, we should get the right default values when decoding as V2" in {
