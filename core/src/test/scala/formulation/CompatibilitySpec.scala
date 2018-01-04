@@ -1,6 +1,5 @@
 package formulation
 
-import cats.syntax.writer
 import org.scalatest.{Matchers, WordSpec}
 
 class CompatibilitySpec extends WordSpec with Matchers {

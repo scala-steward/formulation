@@ -58,4 +58,17 @@ object Main extends App {
 }
 ```
 
+# Current performance
 
+```
+Benchmark                           Mode  Cnt        Score       Error  Units
+DecodeBenchmark.decodeAvro4s       thrpt   20    99498.195 ±  4785.043  ops/s
+DecodeBenchmark.decodeCirce        thrpt   20   978108.090 ± 17369.432  ops/s
+DecodeBenchmark.decodeFormulation  thrpt   20   147907.666 ±  5669.100  ops/s
+EncodeBenchmark.encodeAvro4s       thrpt   20   341777.995 ±  3395.276  ops/s
+EncodeBenchmark.encodeCirce        thrpt   20  1084970.937 ± 16072.885  ops/s
+EncodeBenchmark.encodeFormulation  thrpt   20   724877.666 ±  9722.147  ops/s
+```
+
+- Encode performance is twice as fast as avro4s, close to circe.
+- Decode is faster then avro4s, but much slower then circe (will investigate)
