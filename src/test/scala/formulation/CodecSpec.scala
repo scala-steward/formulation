@@ -1,50 +1,15 @@
 package formulation
 
-import java.time.{LocalDate, LocalDateTime, LocalTime}
+import java.time.{LocalDate, LocalDateTime}
 import java.util
 import java.util.UUID
 
 import cats.Eq
 import cats.implicits._
-import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
-case class Generic[T](value: T)
-
-case class UserId(id: Int)
-
-sealed trait BookingProcess { val disc: Int }
-
-object BookingProcess {
-  final case class DateSelected(disc: Int, datetime: LocalDateTime) extends BookingProcess
-  final case class NotStarted(disc: Int) extends BookingProcess
-  final case class Cancelled(disc: Int) extends BookingProcess
-}
-
-
-class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks {
-
-  val namespace = "formulation"
-
-  val dateDeselected: Avro[BookingProcess.DateSelected] =
-    record2(namespace, "DateSelected")(BookingProcess.DateSelected.apply)(
-      "disc" -> Member(int.discriminator(1), _.disc),
-      "datetime" -> Member(localDateTime, _.datetime)
-    )
-
-  val notStarted: Avro[BookingProcess.NotStarted] =
-    record1(namespace, "NotStarted")(BookingProcess.NotStarted.apply)(
-      "disc" -> Member(int.discriminator(0), _.disc)
-    )
-
-  val cancelled: Avro[BookingProcess.Cancelled] =
-    record1(namespace, "Cancelled")(BookingProcess.Cancelled.apply)(
-      "disc" -> Member(int.discriminator(2), _.disc)
-    )
-
-  implicit val bookingProcess: Avro[BookingProcess] =
-    (dateDeselected | notStarted | cancelled).as[BookingProcess]
+class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks with ArbitraryHelpers {
 
   "Codec" should {
 
@@ -82,7 +47,7 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
       forAll { (a: Array[Byte]) => assert(a, byteArray) }
     }
     "work with BigDecimal" in {
-      forAll { (a: BigDecimal) => assert(a, bigDecimal(300, 8)) }
+      forAll { (a: BigDecimal) => assert(a, bigDecimal(300, 300)) }
     }
     "work with Option" in {
       forAll { (a: Option[Int]) => assert(a, option(int)) }
@@ -100,8 +65,8 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
       forAll { (a: Vector[Int]) => assert(a, vector(int)) }
     }
     "work with Map" in {
-      forAll { (a: Map[String, Int]) =>
-        whenever(a.keySet.forall(_.nonEmpty)) { assert(a, map(int)(Attempt.success)(identity)) }
+      forAll(mapGen) { (a: Map[String, Int]) =>
+        assert(a, map(int)(Attempt.success)(identity))
       }
     }
 
@@ -113,15 +78,14 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
 
     "work with ADT" in {
       forAll { (a: BookingProcess) =>
-        assert(a, bookingProcess)
+        assert(a, BookingProcess.codec)
       }
     }
   }
 
-  def assert[A](entity: A, avroPart: Avro[A])(implicit E: Eq[A]) = {
+  def assert[A](entity: A, avroPart: Avro[A])(implicit E: Eq[A]): Boolean = {
 
-    implicit val avro: Avro[Generic[A]] =
-      record1(namespace, "Generic")(Generic.apply[A])("value" -> Member(avroPart, _.value))
+    implicit def codec: Avro[Generic[A]] = Generic.codec(avroPart)
 
     val record = Generic(entity)
 
@@ -131,42 +95,6 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
     }
 
     eqGeneric.eqv(decode[Generic[A]](encode(record)), Attempt.success(record))
-  }
-
-  implicit val bookingProcessArb: Arbitrary[BookingProcess] = Arbitrary {
-    def genNotStarted = Gen.const(BookingProcess.NotStarted(0))
-    def genCancelled = Gen.const(BookingProcess.Cancelled(2))
-    def genDateSelected = localDateTineArb.arbitrary.map(date => BookingProcess.DateSelected(1, date))
-
-    for {
-      caze <- Gen.choose(0, 2)
-      process <- caze match {
-        case 0 => genNotStarted
-        case 1 => genDateSelected
-        case 2 => genCancelled
-      }
-    } yield process
-  }
-
-  implicit val uuidArb: Arbitrary[UUID] = Arbitrary(Gen.uuid)
-  implicit val localDateArb: Arbitrary[LocalDate] = Arbitrary {
-    for {
-      year <- Gen.choose(1970, 2050)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, 28)
-    } yield LocalDate.of(year, month, day)
-  }
-
-
-  implicit val localDateTineArb: Arbitrary[LocalDateTime] = Arbitrary {
-    for {
-      year <- Gen.choose(1970, 2050)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, 28)
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
-    } yield LocalDateTime.of(LocalDate.of(year, month, day), LocalTime.of(hour, minute, second))
   }
 
   implicit val eqUserId: Eq[UserId] = Eq.fromUniversalEquals[UserId]

@@ -1,5 +1,7 @@
 package formulation
 
+import org.codehaus.jackson.JsonNode
+
 import scala.util.Try
 import shapeless.ops.coproduct.Align
 import shapeless.{Coproduct, Generic, HList}
@@ -95,7 +97,7 @@ object Attempt {
   }
 }
 
-final case class Member[F[_], A, B](typeClass: F[A], getter: B => A, defaultValue: Option[A] = None) {
+final case class Member[F[_], A, B] (typeClass: F[A], getter: B => A, defaultValue: Option[JsonNode] = None) {
   def mapTypeClass[G[_]](f: F ~> G): Member[G, A, B] = copy(typeClass = f(typeClass))
 }
 

@@ -22,7 +22,8 @@ object Boilerplate {
     GenAvroDsl,
     GenAvroSchema,
     GenAvroDecoder,
-    GenAvroEncoder
+    GenAvroEncoder,
+    GenAvroDefaultValuePrinter
   )
 
   val header = "// auto-generated boilerplate" // TODO: put something meaningful here?
@@ -128,7 +129,7 @@ object Boilerplate {
       import tv._
 
       val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroSchema, $tpe, Z])"} mkString ", "
-      val applies = synTypes map { tpe => s"new Field(param$tpe._1, param$tpe._2.typeClass.generateSchema, null, null)"} mkString ", "
+      val applies = synTypes map { tpe => s"new Field(param$tpe._1, param$tpe._2.typeClass.generateSchema, null, param$tpe._2.defaultValue.getOrElse(null))"} mkString ", "
       block"""
         |package formulation
         |
@@ -185,6 +186,28 @@ object Boilerplate {
         |
         |trait AvroEncoderRecordN { self: AvroAlgebra[AvroEncoder] =>
         -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroEncoder[Z] = AvroEncoder.createNamed(namespace, name) { case (s, v) => val r = new GenericData.Record(s); $applies; r }
+        |}
+        |
+      """
+    }
+  }
+
+  object GenAvroDefaultValuePrinter extends Template {
+    def filename(root: File) = root /  "formulation" / "AvroDefaultValuePrinterRecordN.scala"
+
+    def content(tv: TemplateVals) = {
+      import tv._
+
+      val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroDefaultValuePrinter, $tpe, Z])"} mkString ", "
+      val applies = synTypes map { tpe => s"r.put(param$tpe._1, param$tpe._2.typeClass.print(param$tpe._2.getter(v)))"} mkString "; "
+
+      block"""
+        |package formulation
+        |
+        |import org.codehaus.jackson.node._
+        |
+        |trait AvroDefaultValuePrinterRecordN { self: AvroAlgebra[AvroDefaultValuePrinter] =>
+        -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDefaultValuePrinter[Z] = AvroDefaultValuePrinter.create { case v => val r = new ObjectNode(JsonNodeFactory.instance); $applies; r }
         |}
         |
       """

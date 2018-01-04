@@ -8,6 +8,9 @@ import scala.util.control.NonFatal
 
 package object formulation extends AvroDsl {
 
+  def member[A, B](avro: Avro[A], getter: B => A, defaultValue: Option[A] = None): Member[Avro, A, B] =
+    Member[Avro, A, B](avro, getter, defaultValue.map(v => avro.apply[AvroDefaultValuePrinter].print(v)))
+
   def encode[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): Array[Byte] = {
     val os = new ByteArrayOutputStream()
 

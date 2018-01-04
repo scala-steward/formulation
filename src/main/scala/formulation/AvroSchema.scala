@@ -1,6 +1,7 @@
 package formulation
 
-import org.apache.avro.Schema
+import org.apache.avro.{LogicalTypes, Schema}
+import org.codehaus.jackson.JsonNode
 import shapeless.CNil
 
 import scala.annotation.implicitNotFound
@@ -40,7 +41,11 @@ object AvroSchema {
 
     override val cnil: AvroSchema[CNil] = AvroSchema.create(Schema.create(Schema.Type.NULL))
 
-    override def bigDecimal(scale: Int, precision: Int): AvroSchema[BigDecimal] = AvroSchema.create(Schema.create(Schema.Type.BYTES))
+    override def bigDecimal(scale: Int, precision: Int): AvroSchema[BigDecimal] = {
+      val schema = Schema.create(Schema.Type.BYTES)
+      LogicalTypes.decimal(precision, scale).addToSchema(schema)
+      AvroSchema.create(schema)
+    }
 
     override def imap[A, B](fa: AvroSchema[A])(f: A => B)(g: B => A): AvroSchema[B] = by(fa)(g)
 
@@ -74,7 +79,7 @@ object AvroSchema {
 
       def moveNullToHead(schemas: Seq[Schema]) = {
         val (nulls, withoutNull) = schemas.partition(_.getType == Schema.Type.NULL)
-        nulls.headOption.toSeq ++ withoutNull
+        withoutNull ++ nulls
       }
 
       val subschemas = List(fa.generateSchema, fb.generateSchema).flatMap(schemasOf)
