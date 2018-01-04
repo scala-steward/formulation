@@ -21,7 +21,8 @@ package object formulation extends AvroDsl {
       encoder.flush()
 
       os.toByteArray
-    } finally {
+    }
+    finally {
       os.close()
     }
   }
@@ -43,7 +44,7 @@ package object formulation extends AvroDsl {
       R.decode(record)
     }
     catch {
-      case NonFatal(ex) => Attempt.exception(ex)
+      case NonFatal(ex) => Attempt.exception(DecodeError(ex))
     }
     finally {
       in.close()

@@ -184,7 +184,7 @@ object Boilerplate {
         |import org.apache.avro.generic.GenericData
         |
         |trait AvroEncoderRecordN { self: AvroAlgebra[AvroEncoder] =>
-        -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroEncoder[Z] = AvroEncoder.create { case (s, v) => val r = new GenericData.Record(s); $applies; r }
+        -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroEncoder[Z] = AvroEncoder.createNamed(namespace, name) { case (s, v) => val r = new GenericData.Record(s); $applies; r }
         |}
         |
       """

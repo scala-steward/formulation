@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 
 import org.apache.avro.{Conversions, LogicalTypes}
 import org.apache.avro.util.Utf8
+import shapeless.CNil
 
 import scala.annotation.implicitNotFound
 import scala.util.Try
@@ -15,6 +16,10 @@ trait AvroDecoder[A] { self =>
   def map[B](f: A => B): AvroDecoder[B] = new AvroDecoder[B] {
     override def decode(data: Any): Attempt[B] = self.decode(data).map(f)
   }
+
+  def orElse[B](other: AvroDecoder[B]): AvroDecoder[Either[A,B]] = new AvroDecoder[Either[A, B]] {
+    override def decode(data: Any): Attempt[Either[A, B]] = self.decode(data) orElse other.decode(data)
+  }
 }
 
 object AvroDecoder {
@@ -23,6 +28,10 @@ object AvroDecoder {
 
   def partial[A](f: PartialFunction[Any, Attempt[A]]): AvroDecoder[A] = new AvroDecoder[A] {
     override def decode(data: Any): Attempt[A] = f.applyOrElse(data, (x: Any) => Attempt.error(s"Unexpected '$x' (class: ${x.getClass})"))
+  }
+
+  def fail[A](error: String): AvroDecoder[A] = new AvroDecoder[A] {
+    override def decode(data: Any): Attempt[A] = Attempt.error(error)
   }
 
   implicit val interpreter: AvroAlgebra[AvroDecoder] = new AvroAlgebra[AvroDecoder] with AvroDecoderRecordN {
@@ -34,6 +43,7 @@ object AvroDecoder {
     override val byteArray: AvroDecoder[Array[Byte]] = partial[Array[Byte]] { case v: ByteBuffer => Attempt.success(v.array()) }
     override val double: AvroDecoder[Double] = partial { case v: Double => Attempt.success(v) }
     override val long: AvroDecoder[Long] = partial { case v: Long => Attempt.success(v) }
+    override val cnil: AvroDecoder[CNil] = fail("Unable to decode cnil")
 
     override def bigDecimal(scale: Int, precision: Int): AvroDecoder[BigDecimal] = partial[BigDecimal] { case v: ByteBuffer =>
 
@@ -71,12 +81,12 @@ object AvroDecoder {
     override def seq[A](of: AvroDecoder[A]): AvroDecoder[Seq[A]] =
       list(of).map(_.toSeq)
 
-    override def map[K, V](of: AvroDecoder[V], contramapKey: K => String, mapKey: String => Attempt[K]): AvroDecoder[Map[K, V]] =
+    override def map[K, V](of: AvroDecoder[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroDecoder[Map[K, V]] =
       partial { case x: java.util.Map[_, _] =>
         x.asScala
           .toMap
           .map { case (k, v) => k.toString -> v }
-          .foldRight(Attempt.success(Map.empty) : Attempt[Map[K, V]]) { case ((key, value), init) =>
+          .foldRight(Attempt.success(Map.empty): Attempt[Map[K, V]]) { case ((key, value), init) =>
             Applicative.map3(mapKey(key), of.decode(value), init) { case (k, v, acc) => acc + (k -> v) }
           }
       }
@@ -84,7 +94,11 @@ object AvroDecoder {
     override def pmap[A, B](fa: AvroDecoder[A])(f: A => Attempt[B])(g: B => A): AvroDecoder[B] = new AvroDecoder[B] {
       override def decode(data: Any): Attempt[B] = fa.decode(data).flatMap(f)
     }
+
+    override def or[A, B](fa: AvroDecoder[A], fb: AvroDecoder[B]): AvroDecoder[Either[A, B]] = fa orElse fb
   }
 
   implicit def apply[A](implicit A: Avro[A]): AvroDecoder[A] = A.apply[AvroDecoder]
+
+
 }

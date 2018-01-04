@@ -1,10 +1,16 @@
 package formulation
 
 import scala.util.Try
+import shapeless.ops.coproduct.Align
+import shapeless.{Coproduct, Generic, HList}
 
 
 trait ~>[F[_], G[_]] {
   def apply[A](fa: F[A]): G[A]
+}
+
+trait InvariantFunctor[F[_]] {
+  def imap[A, B](fa: F[A])(f: A => B)(g: B => A): F[B]
 }
 
 trait Traverse[F[_]] {
@@ -60,6 +66,14 @@ sealed trait Attempt[+A] { self =>
     case Attempt.Success(value) => Some(value)
     case Attempt.Error(err) => None
   }
+
+  def orElse[B](f: => Attempt[B]): Attempt[Either[A, B]] = self match {
+    case Attempt.Success(left) => Attempt.success(Left(left))
+    case Attempt.Error(_) => f match {
+      case Attempt.Success(right) => Attempt.success(Right(right))
+      case Attempt.Error(error) => Attempt.Error(error)
+    }
+  }
 }
 
 object Attempt {
@@ -69,11 +83,6 @@ object Attempt {
   def exception(ex: Throwable): Attempt[Nothing] = Attempt.Error(ex)
   def error(msg: String): Attempt[Nothing] = Attempt.Error(new Throwable(msg))
   def success[A](value: A): Attempt[A] = Attempt.Success(value)
-
-  def fromEither[A](either: Either[Throwable, A]): Attempt[A] = either match {
-    case Left(err) => exception(err)
-    case Right(value) => success(value)
-  }
 
   def fromTry[A](t: Try[A]): Attempt[A] = t match {
     case scala.util.Failure(err) => exception(err)
@@ -86,7 +95,26 @@ object Attempt {
   }
 }
 
-
 final case class Member[F[_], A, B](typeClass: F[A], getter: B => A, defaultValue: Option[A] = None) {
   def mapTypeClass[G[_]](f: F ~> G): Member[G, A, B] = copy(typeClass = f(typeClass))
 }
+
+
+trait Transformer[F[_], I, O] {
+  def apply(fi: F[I]): F[O]
+}
+
+object Transformer {
+  implicit def alignedCoproduct[F[_], I <: Coproduct, Repr <: Coproduct, O](implicit
+                                                                            I: InvariantFunctor[F],
+                                                                            G: Generic.Aux[O, Repr],
+                                                                            TA: Align[Repr, I],
+                                                                            FA: Align[I, Repr]): Transformer[F, I, O] = new Transformer[F, I, O] {
+    override def apply(fi: F[I]): F[O] =
+      I.imap(fi)(a => G.from(FA(a)))(b => TA(G.to(b)))
+  }
+}
+
+final case class RecordFqdn(namespace: String, name: String)
+
+final case class DecodeError(error: Throwable) extends Throwable(error)

@@ -3,11 +3,12 @@ package formulation
 import java.nio.ByteBuffer
 
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
+import shapeless.CNil
 
 import scala.annotation.implicitNotFound
 
 @implicitNotFound(msg = "AvroEncoder[${A}] not found, did you implicitly define Avro[${A}]?")
-trait AvroEncoder[A] {
+abstract class AvroEncoder[A](val name: Option[RecordFqdn]) {
   def encode(schema: Schema, value: A): Any
 }
 
@@ -15,12 +16,32 @@ object AvroEncoder {
 
   import scala.collection.JavaConverters._
 
-  def by[A, B](fa: AvroEncoder[A])(f: B => A): AvroEncoder[B] = new AvroEncoder[B] {
+  def by[A, B](fa: AvroEncoder[A])(f: B => A): AvroEncoder[B] = new AvroEncoder[B](fa.name) {
     override def encode(schema: Schema, value: B): Any = fa.encode(schema, f(value))
   }
 
-  def create[A](f: (Schema, A) => Any): AvroEncoder[A] = new AvroEncoder[A] {
+  def create[A](f: (Schema, A) => Any): AvroEncoder[A] = new AvroEncoder[A](None) {
     override def encode(schema: Schema, value: A): Any = f(schema, value)
+  }
+
+  def createNamed[A](namespace: String, name: String)(f: (Schema, A) => Any): AvroEncoder[A] = new AvroEncoder[A](Some(RecordFqdn(namespace, name))) {
+    override def encode(schema: Schema, value: A): Any = f(schema, value)
+  }
+
+  def debug[A](text: String)(encoder: AvroEncoder[A]): AvroEncoder[A] = new AvroEncoder[A](encoder.name) {
+    override def encode(schema: Schema, value: A): Any = {
+      println(s"Debug AvroEncoder - $text")
+      println("--")
+      println(s"schema: ${schema.toString}")
+      println(s"value: $value")
+
+      val result = encoder.encode(schema, value)
+
+      println(s"result: $result")
+      println("---")
+
+      result
+    }
   }
 
   implicit def apply[A](implicit A: Avro[A]): AvroEncoder[A] = A.apply[AvroEncoder]
@@ -35,11 +56,13 @@ object AvroEncoder {
 
     override val float: AvroEncoder[Float] = AvroEncoder.create((_, v) => v)
 
-    override val byteArray: AvroEncoder[Array[Byte]] = AvroEncoder.create((_, v) => ByteBuffer.wrap(v) )
+    override val byteArray: AvroEncoder[Array[Byte]] = AvroEncoder.create((_, v) => ByteBuffer.wrap(v))
 
     override val double: AvroEncoder[Double] = AvroEncoder.create((_, v) => v)
 
     override val long: AvroEncoder[Long] = AvroEncoder.create((_, v) => v)
+
+    override val cnil: AvroEncoder[CNil] = AvroEncoder.create((_, v) => null)
 
     override def bigDecimal(scale: Int, precision: Int): AvroEncoder[BigDecimal] = AvroEncoder.create { case (_, v: BigDecimal) =>
       val decimalType = LogicalTypes.decimal(precision, scale)
@@ -48,7 +71,8 @@ object AvroEncoder {
       decimalConversion.toBytes(v.setScale(scale).bigDecimal, null, decimalType)
     }
 
-    override def imap[A, B](fa: AvroEncoder[A])(f: A => B)(g: B => A): AvroEncoder[B] = AvroEncoder.create((_, v) => g(v))
+    override def imap[A, B](fa: AvroEncoder[A])(f: A => B)(g: B => A): AvroEncoder[B] =
+      AvroEncoder.create((schema, v) => fa.encode(schema, g(v)))
 
     override def option[A](from: AvroEncoder[A]): AvroEncoder[Option[A]] = AvroEncoder.create {
       case (schema, Some(value)) => from.encode(schema, value)
@@ -67,7 +91,27 @@ object AvroEncoder {
 
     override def seq[A](of: AvroEncoder[A]): AvroEncoder[Seq[A]] = by(list(of))(_.toList)
 
-    override def map[K, V](of: AvroEncoder[V], contramapKey: K => String, mapKey: String => Attempt[K]): AvroEncoder[Map[K, V]] =
+    override def map[K, V](of: AvroEncoder[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroEncoder[Map[K, V]] =
       AvroEncoder.create((schema, mm) => mm.map { case (k, v) => contramapKey(k) -> of.encode(schema.getValueType, v) }.asJava)
+
+    override def or[A, B](fa: AvroEncoder[A], fb: AvroEncoder[B]): AvroEncoder[Either[A, B]] =
+      AvroEncoder.create { case (schema, value) =>
+
+        def encode[Z](encoder: AvroEncoder[Z], value: Z) = encoder.name match {
+          case Some(fqdn) =>
+            val idx = schema.getIndexNamed(s"${fqdn.namespace}.${fqdn.name}")
+            val types = schema.getTypes.asScala
+
+            encoder.encode(types(idx), value)
+
+          case None => encoder.encode(schema, value)
+        }
+
+        value match {
+          case Left(left) => encode(fa, left)
+          case Right(right) => encode(fb, right)
+        }
+      }
+
   }
 }

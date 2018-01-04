@@ -1,6 +1,7 @@
 package formulation
 
 import org.apache.avro.Schema
+import shapeless.CNil
 
 import scala.annotation.implicitNotFound
 
@@ -10,6 +11,8 @@ trait AvroSchema[A] {
 }
 
 object AvroSchema {
+
+  import scala.collection.JavaConverters._
 
   def create[A](schema: Schema): AvroSchema[A] = new AvroSchema[A] {
     override def generateSchema: Schema = schema
@@ -35,6 +38,8 @@ object AvroSchema {
 
     override val long: AvroSchema[Long] = AvroSchema.create(Schema.create(Schema.Type.LONG))
 
+    override val cnil: AvroSchema[CNil] = AvroSchema.create(Schema.create(Schema.Type.NULL))
+
     override def bigDecimal(scale: Int, precision: Int): AvroSchema[BigDecimal] = AvroSchema.create(Schema.create(Schema.Type.BYTES))
 
     override def imap[A, B](fa: AvroSchema[A])(f: A => B)(g: B => A): AvroSchema[B] = by(fa)(g)
@@ -51,7 +56,32 @@ object AvroSchema {
 
     override def seq[A](of: AvroSchema[A]): AvroSchema[Seq[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def map[K, V](value: AvroSchema[V], contramapKey: K => String, mapKey: String => Attempt[K]): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
+    override def map[K, V](value: AvroSchema[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
+
+    override def or[A, B](fa: AvroSchema[A], fb: AvroSchema[B]): AvroSchema[Either[A, B]] = {
+      import scala.util.{Failure, Success, Try}
+
+      // union schemas can't contain other union schemas as a direct
+      // child, so whenever we create a union, we need to check if our
+      // children are unions
+
+      // if they are, we just merge them into the union we're creating
+
+      def schemasOf(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
+        case Success(subschemas) => subschemas.asScala
+        case Failure(_) => Seq(schema)
+      }
+
+      def moveNullToHead(schemas: Seq[Schema]) = {
+        val (nulls, withoutNull) = schemas.partition(_.getType == Schema.Type.NULL)
+        nulls.headOption.toSeq ++ withoutNull
+      }
+
+      val subschemas = List(fa.generateSchema, fb.generateSchema).flatMap(schemasOf)
+
+      AvroSchema.create(Schema.createUnion(moveNullToHead(subschemas).asJava))
+    }
+
   }
 
   implicit def apply[A](implicit A: Avro[A]): AvroSchema[A] = A.apply[AvroSchema]

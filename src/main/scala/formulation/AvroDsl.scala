@@ -4,6 +4,8 @@ import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
+import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
+
 import scala.util.Try
 
 trait Avro[A] {
@@ -36,6 +38,10 @@ trait AvroDsl extends AvroDslRecordN { self =>
     override def apply[F[_] : AvroAlgebra]: F[Float] = implicitly[AvroAlgebra[F]].float
   }
 
+  val cnil: Avro[CNil] = new Avro[CNil] {
+    override def apply[F[_] : AvroAlgebra]: F[CNil] = implicitly[AvroAlgebra[F]].cnil
+  }
+
   val byteArray: Avro[Array[Byte]] = new Avro[Array[Byte]] {
     override def apply[F[_] : AvroAlgebra]: F[Array[Byte]] = implicitly[AvroAlgebra[F]].byteArray
   }
@@ -52,6 +58,7 @@ trait AvroDsl extends AvroDslRecordN { self =>
 
   val localDateTime: Avro[LocalDateTime] =
     string.pmap(str => Attempt.fromTry(Try(LocalDateTime.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+
 
   def imap[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] = new Avro[B] {
     override def apply[F[_] : AvroAlgebra]: F[B] = implicitly[AvroAlgebra[F]].imap(fa.apply[F])(f)(g)
@@ -81,12 +88,43 @@ trait AvroDsl extends AvroDslRecordN { self =>
     override def apply[F[_] : AvroAlgebra]: F[Seq[A]] = implicitly[AvroAlgebra[F]].seq(of.apply[F])
   }
 
-  def map[K, V](of: Avro[V], contramapKey: K => String, mapKey: String => Attempt[K]): Avro[Map[K, V]] = new Avro[Map[K, V]] {
-    override def apply[F[_] : AvroAlgebra]: F[Map[K, V]] = implicitly[AvroAlgebra[F]].map(of.apply[F], contramapKey, mapKey)
+  def map[K, V](of: Avro[V])(mapKey: String => Attempt[K])(contramapKey: K => String): Avro[Map[K, V]] = new Avro[Map[K, V]] {
+    override def apply[F[_] : AvroAlgebra]: F[Map[K, V]] = implicitly[AvroAlgebra[F]].map(of.apply[F])(mapKey)(contramapKey)
+  }
+
+  def or[A, B](fa: Avro[A], fb: Avro[B]): Avro[Either[A, B]] = new Avro[Either[A, B]] {
+    override def apply[F[_] : AvroAlgebra]: F[Either[A, B]] = implicitly[AvroAlgebra[F]].or(fa.apply[F], fb.apply[F])
   }
 
   implicit class RichAvro[A](val fa: Avro[A]) {
     def imap[B](f: A => B)(g: B => A): Avro[B] = self.imap(fa)(f)(g)
     def pmap[B](f: A => Attempt[B])(g: B => A): Avro[B] = self.pmap(fa)(f)(g)
+    def discriminator(v: A): Avro[A] =
+      pmap(a => if(v == a) Attempt.success(v) else Attempt.error(s"Value '$a' didn't equal static('$v')"))(identity)
+    def |[B](fb: Avro[B]): UnionBuilder[A :+: B :+: CNil] =
+      new UnionBuilder[CNil](cnil).add(fb).add(fa)
+  }
+
+  implicit val invariantFunctor: InvariantFunctor[Avro] = new InvariantFunctor[Avro] {
+    override def imap[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] = self.imap(fa)(f)(g)
+  }
+
+  final class UnionBuilder[B <: Coproduct](fb: Avro[B]) {
+
+    def add[A](fa: Avro[A]): UnionBuilder[A :+: B] = {
+      val coproduct = imap(or(fa, fb)) {
+        case Left(l) => Inl(l)
+        case Right(r) => Inr(r)
+      } {
+        case Inl(l) => Left(l)
+        case Inr(r) => Right(r)
+      }
+
+      new UnionBuilder(coproduct)
+    }
+
+    def |[A](fa: Avro[A]): UnionBuilder[A :+: B] = add(fa)
+
+    def as[A](implicit T: Transformer[Avro, B, A]): Avro[A] = T(fb)
   }
 }

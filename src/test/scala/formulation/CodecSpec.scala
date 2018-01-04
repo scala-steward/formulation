@@ -14,7 +14,37 @@ case class Generic[T](value: T)
 
 case class UserId(id: Int)
 
+sealed trait BookingProcess { val disc: Int }
+
+object BookingProcess {
+  final case class DateSelected(disc: Int, datetime: LocalDateTime) extends BookingProcess
+  final case class NotStarted(disc: Int) extends BookingProcess
+  final case class Cancelled(disc: Int) extends BookingProcess
+}
+
+
 class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks {
+
+  val namespace = "formulation"
+
+  val dateDeselected: Avro[BookingProcess.DateSelected] =
+    record2(namespace, "DateSelected")(BookingProcess.DateSelected.apply)(
+      "disc" -> Member(int.discriminator(1), _.disc),
+      "datetime" -> Member(localDateTime, _.datetime)
+    )
+
+  val notStarted: Avro[BookingProcess.NotStarted] =
+    record1(namespace, "NotStarted")(BookingProcess.NotStarted.apply)(
+      "disc" -> Member(int.discriminator(0), _.disc)
+    )
+
+  val cancelled: Avro[BookingProcess.Cancelled] =
+    record1(namespace, "Cancelled")(BookingProcess.Cancelled.apply)(
+      "disc" -> Member(int.discriminator(2), _.disc)
+    )
+
+  implicit val bookingProcess: Avro[BookingProcess] =
+    (dateDeselected | notStarted | cancelled).as[BookingProcess]
 
   "Codec" should {
 
@@ -71,7 +101,19 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
     }
     "work with Map" in {
       forAll { (a: Map[String, Int]) =>
-        whenever(a.keySet.forall(_.nonEmpty)) { assert(a, map[String, Int](int, identity, Attempt.success)) }
+        whenever(a.keySet.forall(_.nonEmpty)) { assert(a, map(int)(Attempt.success)(identity)) }
+      }
+    }
+
+    "work with Either" in {
+      forAll { (a: Either[Int, String]) =>
+        assert(a, or(int, string))
+      }
+    }
+
+    "work with ADT" in {
+      forAll { (a: BookingProcess) =>
+        assert(a, bookingProcess)
       }
     }
   }
@@ -79,7 +121,7 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
   def assert[A](entity: A, avroPart: Avro[A])(implicit E: Eq[A]) = {
 
     implicit val avro: Avro[Generic[A]] =
-      record1("formulation", "Generic")(Generic.apply[A])("value" -> Member(avroPart, _.value))
+      record1(namespace, "Generic")(Generic.apply[A])("value" -> Member(avroPart, _.value))
 
     val record = Generic(entity)
 
@@ -89,6 +131,21 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
     }
 
     eqGeneric.eqv(decode[Generic[A]](encode(record)), Attempt.success(record))
+  }
+
+  implicit val bookingProcessArb: Arbitrary[BookingProcess] = Arbitrary {
+    def genNotStarted = Gen.const(BookingProcess.NotStarted(0))
+    def genCancelled = Gen.const(BookingProcess.Cancelled(2))
+    def genDateSelected = localDateTineArb.arbitrary.map(date => BookingProcess.DateSelected(1, date))
+
+    for {
+      caze <- Gen.choose(0, 2)
+      process <- caze match {
+        case 0 => genNotStarted
+        case 1 => genDateSelected
+        case 2 => genCancelled
+      }
+    } yield process
   }
 
   implicit val uuidArb: Arbitrary[UUID] = Arbitrary(Gen.uuid)
@@ -113,8 +170,10 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
   }
 
   implicit val eqUserId: Eq[UserId] = Eq.fromUniversalEquals[UserId]
+  implicit val eqBookingProcess: Eq[BookingProcess] = Eq.fromUniversalEquals[BookingProcess]
   implicit val eqLocalDate: Eq[LocalDate] = Eq.fromUniversalEquals[LocalDate]
   implicit val eqLocalDateTime: Eq[LocalDateTime] = Eq.fromUniversalEquals[LocalDateTime]
   implicit val eqArrayByte: Eq[Array[Byte]] = Eq.instance[Array[Byte]]((x, y) => util.Arrays.equals(x, y))
   implicit def eqSeq[A](implicit E: Eq[A]): Eq[Seq[A]] = Eq.instance[Seq[A]] { case (x, y) => (x zip y).forall(l => E.eqv(l._1, l._2)) }
+
 }
