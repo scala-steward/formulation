@@ -1,10 +1,10 @@
 package formulation
 
 import org.codehaus.jackson.JsonNode
+import shapeless.ops.coproduct.Align
+import shapeless.{Coproduct, Generic}
 
 import scala.util.Try
-import shapeless.ops.coproduct.Align
-import shapeless.{Coproduct, Generic, HList}
 
 
 trait ~>[F[_], G[_]] {
@@ -66,7 +66,7 @@ sealed trait Attempt[+A] { self =>
 
   def toOption: Option[A] = self match {
     case Attempt.Success(value) => Some(value)
-    case Attempt.Error(err) => None
+    case Attempt.Error(_) => None
   }
 
   def orElse[B](f: => Attempt[B]): Attempt[Either[A, B]] = self match {

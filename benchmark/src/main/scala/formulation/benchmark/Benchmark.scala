@@ -26,7 +26,7 @@ class EncodeBenchmark {
     val output = AvroOutputStream.binary[UserV1](baos)
     output.write(user)
     output.close()
-    val bytes = baos.toByteArray
+    baos.toByteArray
   }
   @Benchmark
   def encodeFormulation(): Unit = formulation.encode(user)
@@ -49,7 +49,7 @@ class DecodeBenchmark {
   def decodeAvro4s(): Unit = {
     val in = new ByteArrayInputStream(avroBytes)
     val input = AvroInputStream.binary[UserV1](in)
-    val result = input.iterator.toSeq
+    input.iterator.toSeq
   }
 
   @Benchmark

@@ -1,7 +1,6 @@
 package formulation
 
 import org.apache.avro.{LogicalTypes, Schema}
-import org.codehaus.jackson.JsonNode
 import shapeless.CNil
 
 import scala.annotation.implicitNotFound
