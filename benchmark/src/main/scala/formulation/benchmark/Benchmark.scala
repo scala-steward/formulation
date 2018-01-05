@@ -11,6 +11,7 @@ import io.circe.syntax._
 
 import org.openjdk.jmh.annotations._
 
+// sbt "benchmark/jmh:run -i 10 -wi 10 -f 2 -t 1 formulation.benchmark.*"
 
 @State(Scope.Thread)
 @BenchmarkMode(Array(Mode.Throughput))

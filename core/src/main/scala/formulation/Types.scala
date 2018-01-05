@@ -80,7 +80,14 @@ sealed trait Attempt[+A] { self =>
 
 object Attempt {
   final case class Success[A](value: A) extends Attempt[A]
-  final case class Error(error: Throwable) extends Attempt[Nothing]
+  final case class Error(error: Throwable) extends Attempt[Nothing] {
+    override def equals(obj: scala.Any): Boolean = {
+      obj match {
+        case Error(other) => other.getMessage == error.getMessage
+        case _ => false
+      }
+    }
+  }
 
   def exception(ex: Throwable): Attempt[Nothing] = Attempt.Error(ex)
   def error(msg: String): Attempt[Nothing] = Attempt.Error(new Throwable(msg))
@@ -89,6 +96,11 @@ object Attempt {
   def fromTry[A](t: Try[A]): Attempt[A] = t match {
     case scala.util.Failure(err) => exception(err)
     case scala.util.Success(value) => success(value)
+  }
+
+  def fromEither[L, R](t: Either[Throwable, R]): Attempt[R] = t match {
+    case Left(err) => exception(err)
+    case Right(value) => success(value)
   }
 
   def fromOption[A](ifEmpty: String)(option: Option[A]): Attempt[A] = option match {

@@ -8,6 +8,9 @@ import scala.util.control.NonFatal
 
 package object formulation extends AvroDsl {
 
+  private val encoderFactory = EncoderFactory.get()
+  private val decoderFactory = DecoderFactory.get()
+
   def member[A, B](avro: Avro[A], getter: B => A, defaultValue: Option[A] = None): Member[Avro, A, B] =
     Member[Avro, A, B](avro, getter, defaultValue.map(v => avro.apply[AvroDefaultValuePrinter].print(v)))
 
@@ -17,7 +20,7 @@ package object formulation extends AvroDsl {
     try {
       val schema = S.generateSchema
       val dataWriter = new GenericDatumWriter[GenericRecord](schema)
-      val encoder = EncoderFactory.get().binaryEncoder(os, null)
+      val encoder = encoderFactory.directBinaryEncoder(os, null)
 
       dataWriter.write(R.encode(schema, value).asInstanceOf[GenericRecord], encoder)
 
@@ -36,11 +39,11 @@ package object formulation extends AvroDsl {
     val in = new ByteArrayInputStream(bytes)
 
     try {
-      val schema = S.generateSchema
+      def schema = S.generateSchema
       val wSchema = writerSchema.getOrElse(schema)
       val rSchema = readerSchema.getOrElse(schema)
       val datumReader = new GenericDatumReader[GenericRecord](wSchema, rSchema)
-      val binDecoder = DecoderFactory.get().binaryDecoder(in, null)
+      val binDecoder = decoderFactory.directBinaryDecoder(in, null)
 
       val record = datumReader.read(null, binDecoder)
 

@@ -2,15 +2,32 @@ val core = project.in(file("core"))
   .settings(commonSettings("core"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "1.0.1" % Test,
-      "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
-      "org.scalatest" %% "scalatest" % "3.0.4" % Test,
       "org.apache.avro" % "avro" % "1.8.2",
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
     coverageExcludedPackages := "formulation.*RecordN",
     sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
   )
+
+val refined = project.in(file("refined"))
+  .settings(commonSettings("refined"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "eu.timepit" %% "refined" % "0.8.6"
+    )
+  )
+  .dependsOn(core)
+
+val tests = project.in(file("tests"))
+  .settings(commonSettings("tests"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % "1.0.1" % Test,
+      "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.4" % Test
+    )
+  )
+  .dependsOn(core, refined)
 
 val benchmark = project.in(file("benchmark"))
   .settings(commonSettings("benchmark"))
@@ -31,20 +48,20 @@ def commonSettings(n: String) = Seq(
   version := "0.1.0",
   organization := "net.vectos",
   scalaVersion := "2.12.1",
-//  scalacOptions ++= Seq(
-//    "-language:higherKinds",
-//    "-feature",
-//    "-deprecation",
-//    "-Yno-adapted-args",
-//    "-Xlint",
-//    "-Xfatal-warnings",
-//    "-unchecked"
-//  ),
-//  scalacOptions in compile ++= Seq(
-//    "-Yno-imports",
-//    "-Ywarn-numeric-widen"
-//  ),
+  //  scalacOptions ++= Seq(
+  //    "-language:higherKinds",
+  //    "-feature",
+  //    "-deprecation",
+  //    "-Yno-adapted-args",
+  //    "-Xlint",
+  //    "-Xfatal-warnings",
+  //    "-unchecked"
+  //  ),
+  //  scalacOptions in compile ++= Seq(
+  //    "-Yno-imports",
+  //    "-Ywarn-numeric-widen"
+  //  ),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4")
 )
 
-val root = project.aggregate(core)
+val root = project.aggregate(core, refined)
