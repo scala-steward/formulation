@@ -23,12 +23,14 @@ Why use Formulation?
 
 The library only relies on avro and shapeless as dependencies.
 
-- Core `"net.vectos" %% "formulation-core" % "xxx"`
-- Refined `"net.vectos" %% "formulation-refined" % "xxx"`
+- Core `"net.vectos" %% "formulation-core" % "0.1.0"`
+- Refined `"net.vectos" %% "formulation-refined" % "0.1.0"`
 
-Replace `xxx` with the version on top of this page (showed by scaladex).
+You need to add the bintray resolver
 
-You need to add the bintray resolver `???`
+```
+resolvers += Resolver.bintrayRepo("fristi", "maven")
+```
 
 ### Supported primitives
 

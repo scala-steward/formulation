@@ -31,6 +31,7 @@ val tests = project.in(file("tests"))
   )
   .dependsOn(core, refined)
 
+
 val benchmark = project.in(file("benchmark"))
   .settings(noPublishSettings)
   .settings(commonSettings("benchmark"))
