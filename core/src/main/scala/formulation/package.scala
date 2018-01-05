@@ -56,4 +56,6 @@ package object formulation extends AvroDsl {
       in.close()
     }
   }
+
+  def schema[A](implicit A: Avro[A]): Schema = A.apply[AvroSchema].generateSchema
 }

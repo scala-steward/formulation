@@ -5,7 +5,7 @@ formulation
 [![Build Status](https://api.travis-ci.org/vectos/formulation.svg)](https://travis-ci.org/vectos/formulation)
 [![codecov.io](http://codecov.io/github/vectos/formulation/coverage.svg?branch=master)](http://codecov.io/github/vectos/formulation?branch=master)
 
-_formulation_ is a EDSL (embedded domain specific language) for describing Avro data types. It
+_formulation_ is a EDSL (embedded domain specific language) for describing Avro data types.
 
 Why use Avro?
 
@@ -44,9 +44,51 @@ Why use Formulation?
 | `java.time.LocalDateTime` | `localDateTime`      | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE_TIME`)  |
 
 
+### Records up till max arity (22 fields)
+
+To define records you use the combinator `recordN` (where N = 1 till 22). The record combinator requires you to specify a namespace and name. Never change the name and namespace if you want to maintain compatibility!
+
+Also per field you need to provide a pair of a field name (also never change this if you want to maintain compatibility) and a description of the member
+
+- Which type (use the combinators above)
+- How to access it (getter)
+- Default value (see below)
+
+We could add aliases later.
+
+### encode and decode
+
+By using `import formulation._` you can use the `encode` and `decode` when there is a implicit `Avro[A]`
+
+The type signature of `encode` looks like this:
+
+```
+def encode[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): Array[Byte]
+```
+
+When there is a `Avro[A]` implicitly available we can summon a `AvroEncoder[A]` and a `AvroSchema[A]` as well.
+
+The type signature of `decode` looks like this:
+
+```
+def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)(implicit R: AvroDecoder[A], S: AvroSchema[A]): Attempt[A]
+```
+
+You can provide a `writerSchema` in case you know the schema it's written with. If it's not supplied it will default to the `S: AvroSchema[A]`.
+
+
+
 ### `imap` - invariant/iso map
 
-Each combinator (e.g.: `int`) supports has the `imap` combinator which allows you to define a isomorphism/invariant map. The original type is used to store the value. This is useful when you use value classes for your identifiers for example:
+Each combinator (e.g.: `int`) supports has the `imap` combinator which allows you to define a isomorphism/invariant map. The original type is used to store the value.
+
+The signature of `imap` is:
+
+```
+def imap[B](f: A => B)(g: B => A): Avro[B]
+```
+
+While encoding we always have the function of `g: B => A`, while encoding we use `f: A => B` which maps the primitive type to a value class for example:
 
 ```scala
 case class UserId(id: Int)
@@ -62,7 +104,15 @@ object UserV1 {
 
 ### `pmap` - partial/prism map
 
-Each combinator (e.g.: `int`) supports also has the `pmap` combinator which allows you to define a prism/partial map. The original type is used to store the value. While encoding we always have the function of `f: B => A`, while decoding we have the function of `f: A => Attempt[B]`.
+Each combinator (e.g.: `int`) supports also has the `pmap` combinator which allows you to define a prism/partial map. The original type is used to store the value.
+
+The signature of `pmap` is:
+
+```
+def pmap[B](f: A => Attempt[B])(g: B => A): Avro[B]
+```
+
+While encoding we always have the function of `g: B => A`, while decoding we have the function of `f: A => Attempt[B]`.
 
 The decoding might fail, therefore we return a `Attempt[A]`. If you would like to support for example string based enumerations you can do it yourself:
 
@@ -102,29 +152,107 @@ Attempt has two cases `Success` and `Error`. It supports several combinators
 - `Attempt.fromTry` - Convert a `Try[A]` to `Attempt[A]`
 - `Attempt.fromOption` - Convert a `Option[A]` to `Attempt[A]`
 
-### ADT support
+### Sum types
 
-TODO
+Because we have the `or` combinator and Avro supports union we can also support sum types (a coproduct/sum type is isomorphic to nested `Either`):
 
+```scala
+sealed trait BookingProcess { val disc: Int }
+
+object BookingProcess {
+  final case class DateSelected(disc: Int, datetime: LocalDateTime) extends BookingProcess
+  final case class NotStarted(disc: Int) extends BookingProcess
+  final case class Cancelled(disc: Int) extends BookingProcess
+
+  private val dateDeselected: Avro[BookingProcess.DateSelected] =
+    record2("formulation", "DateSelected")(BookingProcess.DateSelected.apply)(
+      "disc" -> member(int.discriminator(1), _.disc),
+      "datetime" -> member(localDateTime, _.datetime)
+    )
+
+  private val notStarted: Avro[BookingProcess.NotStarted] =
+    record1("formulation", "NotStarted")(BookingProcess.NotStarted.apply)(
+      "disc" -> member(int.discriminator(0), _.disc)
+    )
+
+  private val cancelled: Avro[BookingProcess.Cancelled] =
+    record1("formulation", "Cancelled")(BookingProcess.Cancelled.apply)(
+      "disc" -> member(int.discriminator(2), _.disc)
+    )
+
+  implicit val codec: Avro[BookingProcess] =
+    (dateDeselected | notStarted | cancelled).as[BookingProcess]
+}
+```
+
+Note that we use `|` to denote a shapeless `Coproduct`, once the sum type has a complete definition you can case it to the super type of the coproduct/sum type. In this case it's `BookingProcess` with the combinator `as`.
 
 ### Generate schemas
 
-TODO
+When you have a implicit `Avro[A]` available you can use `schema[A]` to get the `org.apache.avro.Schema`
+
+```scala
+
+case class UserV1(userId: UserId, username: String, email: String, password: String)
+
+object UserV1 {
+  implicit val codec: Avro[UserV1] = record4("user", "User")(UserV1.apply)(
+    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId),
+    "username" -> member(string, _.username),
+    "email" -> member(string, _.email),
+    "password" -> member(string, _.password)
+  )
+}
+
+val v1: Schema = schema[UserV1]
+
+v1.toString() // will print the JSON schema
+
+```
+
+#### Default values
+
+Above we defined `UserV1`, what if we have `UserV2` which has extra fields and we want to be full compatible? We need to define default values for the new fields `age`, `countries`, `bookingProcess` and `money`. Note `defaultValue` in the `member` method.
+
+```scala
+case class UserV2(
+                   userId: UserId,
+                   username: String,
+                   email: String,
+                   password: String,
+                   age: Option[Int],
+                   countries: List[String],
+                   bookingProcess: BookingProcess,
+                   money: BigDecimal
+                 )
+
+object UserV2 {
+  implicit val codec: Avro[UserV2] = record8("user", "User")(UserV2.apply)(
+    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId),
+    "username" -> member(string, _.username),
+    "email" -> member(string, _.email),
+    "password" -> member(string, _.password),
+    "age" -> member(option(int), _.age, defaultValue = Some(None)),
+    "countries" -> member(list(string), _.countries, defaultValue = Some(List("Holland"))),
+    "bookingProcess" -> member(BookingProcess.codec, _.bookingProcess, defaultValue = Some(BookingProcess.Cancelled(2))),
+    "money" -> member(bigDecimal(300, 300), _.money, defaultValue = Some(1000))
+  )
+}
+```
+
+These values are also outputted in the JSON of the schema.
 
 ### Compatibility checks
 
 ```scala
-val v1 = AvroSchema[UserV1].generateSchema
-val v2 = AvroSchema[UserV2].generateSchema
+val v1: Schema = schema[UserV1]
+val v2: Schema = schema[UserV2]
 
 // equals AvroSchemaCompatibility.Full as v2 has default values
 AvroSchemaCompatibility(writer = v1, reader = v2)
 
 ```
 
-#### Default values
-
-TODO
 
 ### Refined support
 

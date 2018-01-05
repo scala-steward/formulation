@@ -1,15 +1,16 @@
 package formulation
 
+import org.apache.avro.Schema
 import org.scalatest.{Matchers, WordSpec}
 
 class CompatibilitySpec extends WordSpec with Matchers {
 
   implicit val generic: Avro[Generic[Int]] = record1("user", "User")(Generic.apply[Int])("bla" -> member(int, _.value))
 
-  val v1 = AvroSchema[UserV1].generateSchema
-  val v2 = AvroSchema[UserV2].generateSchema
-  val v3 = AvroSchema[UserV3].generateSchema
-  val genericSchema = AvroSchema[Generic[Int]].generateSchema
+  val v1: Schema = schema[UserV1]
+  val v2: Schema = schema[UserV2]
+  val v3: Schema = schema[UserV3]
+  val genericSchema: Schema = schema[Generic[Int]]
 
   "Compatiblity" should {
     "return Full for UserV1 and UserV2 - defaults given" in {
