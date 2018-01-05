@@ -19,84 +19,95 @@ Why use Formulation?
 - _Concise_ - The combinators `imap` and `pmap` makes it easy to introduce support for new data types, while this is verbose in Avro4s
 
 
-## How does it look like ?
+### Supported primitives
+
+
+| Type                      | Combinator           | Remark                                                                        |
+| --------------------------|----------------------|-------------------------------------------------------------------------------|
+| `Int`                     | `int`                |                                                                               |
+| `String`                  | `string`             |                                                                               |
+| `Float`                   | `float`              |                                                                               |
+| `Double`                  | `double`             |                                                                               |
+| `Long`                    | `long`               |                                                                               |
+| `Option[A]`               | `option`             |                                                                               |
+| `Vector[A]`               | `vector`             |                                                                               |
+| `Map[String, A]`          | `map`                | You can contramap/map the key `String`                                        |
+| `List[A]`                 | `list`               |                                                                               |
+| `Set[A]`                  | `set`                |                                                                               |
+| `Seq[A]`                  | `seq`                |                                                                               |
+| `Either[L, R]`            | `or`                 |                                                                               |
+| `Array[Byte]`             | `byteArray`          | It's encoded as bytes (`ByteBuffer`)                                          |
+| `BigDecimal`              | `bigDecimal`         | Uses `byteArray` under the hood, it's encoded as bytes                        |
+| `java.util.UUID`          | `uuid`               | Uses `string` under the hood using                                            |
+| `java.time.Instant`       | `instant`            | Uses `long` under the hood using                                              |
+| `java.time.LocalDate`     | `localDate`          | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE`)       |
+| `java.time.LocalDateTime` | `localDateTime`      | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE_TIME`)  |
+
+
+### `imap` - invariant/iso map
+
+Each combinator (e.g.: `int`) supports has the `imap` combinator which allows you to define a isomorphism/invariant map. The original type is used to store the value. This is useful when you use value classes for your identifiers for example:
 
 ```scala
-import formulation._
+case class UserId(id: Int)
 
-sealed trait BookingProcess { val disc: Int }
-
-object BookingProcess {
-  final case class DateSelected(disc: Int, datetime: LocalDateTime) extends BookingProcess
-  final case class NotStarted(disc: Int) extends BookingProcess
-  final case class Cancelled(disc: Int) extends BookingProcess
-
-  private val dateDeselected: Avro[BookingProcess.DateSelected] =
-    record2("formulation", "DateSelected")(BookingProcess.DateSelected.apply)(
-      "disc" -> member(int.discriminator(1), _.disc),
-      "datetime" -> member(localDateTime, _.datetime)
-    )
-
-  private val notStarted: Avro[BookingProcess.NotStarted] =
-    record1("formulation", "NotStarted")(BookingProcess.NotStarted.apply)(
-      "disc" -> member(int.discriminator(0), _.disc)
-    )
-
-  private val cancelled: Avro[BookingProcess.Cancelled] =
-    record1("formulation", "Cancelled")(BookingProcess.Cancelled.apply)(
-      "disc" -> member(int.discriminator(2), _.disc)
-    )
-
-  // Support for ADT's, note that every instance of BookingProcess has `int.discriminator`, this is used for discrimination while decoding
-  implicit val codec: Avro[BookingProcess] =
-    (dateDeselected | notStarted | cancelled).as[BookingProcess]
-}
-
-case class UserV1(userId: UserId, username: String, email: String, password: String)
+case class UserV1(userId: UserId)
 
 object UserV1 {
-  implicit val codec: Avro[UserV1] = record4("user", "User")(UserV1.apply)(
-    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId),
-    "username" -> member(string, _.username),
-    "email" -> member(string, _.email),
-    "password" -> member(string, _.password)
-  )
-}
-
-case class UserV2(
-                   userId: UserId,
-                   username: String,
-                   email: String,
-                   password: String,
-                   age: Option[Int],
-                   countries: List[String],
-                   bookingProcess: BookingProcess,
-                   money: BigDecimal
-                 )
-
-object UserV2 {
-  implicit val codec: Avro[UserV2] = record8("user", "User")(UserV2.apply)(
-    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId),
-    "username" -> member(string, _.username),
-    "email" -> member(string, _.email),
-    "password" -> member(string, _.password),
-    "age" -> member(option(int), _.age, Some(None)),
-    "countries" -> member(list(string), _.countries, defaultValue = Some(List("Holland"))),
-    "bookingProcess" -> member(BookingProcess.codec, _.bookingProcess, defaultValue = Some(BookingProcess.Cancelled(2))),
-    "money" -> member(bigDecimal(300, 300), _.money, defaultValue = Some(1000))
+  implicit val codec: Avro[UserV1] = record1("user", "User")(UserV1.apply)(
+    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId)
   )
 }
 ```
 
-### Supported primitives
+### `pmap` - partial/prism map
 
-`Int`, `String`, `Float`, `BigDecimal`, `Array[Byte]`, `Double`, `Long`, `Option[A]`, `List[A]`, `Set[A]`, `Vector[A]`, `Seq[A]`, `Map[String, A]`, `UUID`, `Instant`, `LocalDate` and `LocalDateTime`
+Each combinator (e.g.: `int`) supports also has the `pmap` combinator which allows you to define a prism/partial map. The original type is used to store the value. While encoding we always have the function of `f: B => A`, while decoding we have the function of `f: A => Attempt[B]`.
 
-### `imap` - invariant/iso map
+The decoding might fail, therefore we return a `Attempt[A]`. If you would like to support for example string based enumerations you can do it yourself:
+
+```scala
+trait Enum[A] {
+  val allValues: Set[A]
+  def asString(value: A): String
+}
+
+object Enum {
+  def apply[A](values: Set[A])(stringify: A => String): Enum[A] = new Enum[A] {
+    override val allValues: Set[A] = values
+    override def asString(value: A): String = stringify(value)
+  }
+}
+
+object Color {
+  case object Black extends Color("black")
+  case object White extends Color("white")
+  case object Orange extends Color("orange")
+
+  val all: Set[Color] = Set(Black, White, Orange)
+
+  implicit val enum: Enum[Color] = Enum(all)(_.repr)
+}
+
+def enum[A](implicit E: Enum[A]) =
+    string.pmap(str => E.allValues.find(x => E.asString(x) == str).fold[Attempt[A]](Attempt.error(s"Value $str not found"))(Attempt.success))(E.asString)
+
+```
+
+#### Attempt
+
+Attempt has two cases `Success` and `Error`. It supports several combinators
+
+- `Attempt.fromEither` - Convert a `Either[L, R]` to `Attempt[R]`
+- `Attempt.fromTry` - Convert a `Try[A]` to `Attempt[A]`
+- `Attempt.fromOption` - Convert a `Option[A]` to `Attempt[A]`
+
+### ADT support
 
 TODO
 
-### `pmap` - partial/prism map
+
+### Generate schemas
 
 TODO
 

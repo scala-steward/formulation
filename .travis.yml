@@ -28,7 +28,7 @@ before_install:
  - export PATH=${PATH}:./vendor/bundle
 
 script:
-  - sbt coverage test coverageReport
+  - sbt coverage "tests/test" coverageReport
   - codecov
 
 install:
