@@ -14,10 +14,21 @@ Why use Avro?
 
 Why use Formulation?
 
-- _Expressive_ - It supports the most primitive data types in Scala and allows you to `imap` or `pmap` them
+- _Expressive_ - It supports the most primitive data types in Scala and allows you to `imap` or `pmap` them. Once you've defined a `Avro[A]` for a type, you can reuse these definitions to build up bigger types.
 - _Define data types by hand_ - Avro4s derives schema's, encoders and decoders "magically". While this is nice, it can become unwieldy when you have a nested type graph. I believe it's better to explicitly map your data types, so the cognitive process of defining a schema is part of your job instead of a magic macro. This will become important when you want to enforce full compatibility of your schema's
-- _Concise_ - The combinators `imap` and `pmap` makes it easy to introduce support for new data types, while this is verbose in Avro4s
+- _Concise_ - The combinators `imap` and `pmap` makes it easy to introduce support for new data types, while this is verbose in Avro4s. Also the DSL provides a way of describing a schema in type-safe and terse fashion instead of typing JSON files.
 
+
+### Dependencies
+
+The library only relies on avro and shapeless as dependencies.
+
+- Core `"net.vectos" %% "formulation-core" % "xxx"`
+- Refined `"net.vectos" %% "formulation-refined" % "xxx"`
+
+Replace `xxx` with the version on top of this page (showed by scaladex).
+
+You need to add the bintray resolver `???`
 
 ### Supported primitives
 
@@ -43,6 +54,27 @@ Why use Formulation?
 | `java.time.LocalDate`     | `localDate`          | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE`)       |
 | `java.time.LocalDateTime` | `localDateTime`      | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE_TIME`)  |
 
+
+### Minimal example
+
+```scala
+import formulation._
+
+case class Person(name: String, age: Int)
+
+object Person {
+  implicit val codec: Avro[Person] = record2("user", "Person")(Person.apply)(
+    "name" -> member(string, _.name),
+    "age" -> member(int, _.age)
+  )
+}
+
+//encode to a Array[Byte], then decode which yields a `Attempt[Person]`
+decode[Person](encode(Person("Mark", 1337))
+
+//will print the schema as JSON
+schema[Person].toString
+```
 
 ### Records up till max arity (22 fields)
 
@@ -185,11 +217,11 @@ object BookingProcess {
 }
 ```
 
-Note that we use `|` to denote a shapeless `Coproduct`, once the sum type has a complete definition you can case it to the super type of the coproduct/sum type. In this case it's `BookingProcess` with the combinator `as`.
+Note that we use `|` to denote a shapeless `Coproduct`, once the sum type has a complete definition you can cast it to the super type of the coproduct/sum type. In this case it's `BookingProcess` with the combinator `as`.
 
 ### Generate schemas
 
-When you have a implicit `Avro[A]` available you can use `schema[A]` to get the `org.apache.avro.Schema`
+When you have a implicit `Avro[A]` available you can use `schema[A]` to get a `org.apache.avro.Schema`
 
 ```scala
 
@@ -206,8 +238,8 @@ object UserV1 {
 
 val v1: Schema = schema[UserV1]
 
-v1.toString() // will print the JSON schema
-
+// will print the JSON schema
+v1.toString()
 ```
 
 #### Default values
