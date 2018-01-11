@@ -26,7 +26,7 @@ class CompatibilitySpec extends WordSpec with Matchers {
     }
 
     "return NotCompatible for UserV1 and Generic" in {
-      AvroSchemaCompatibility(writer = v3, reader = genericSchema) shouldBe AvroSchemaCompatibility.NotCompatible
+      AvroSchemaCompatibility(writer = v3, reader = genericSchema) shouldBe AvroSchemaCompatibility.None
     }
 
     "work while encoding as V1, we should get the right default values when decoding as V2" in {
@@ -87,5 +87,27 @@ object UserV3 {
     "email" -> member(string, _.email),
     "password" -> member(string, _.password),
     "age" -> member(int, _.age)
+  )
+}
+
+case class UserV4(
+                   userId: UserId,
+                   username: String,
+                   email: String,
+                   password: String,
+                   age: Option[Int],
+                   countries: List[String],
+                   bookingProcess: BookingProcess
+                 )
+
+object UserV4 {
+  implicit val codec: Avro[UserV4] = record7("user", "User")(UserV4.apply)(
+    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId),
+    "username" -> member(string, _.username),
+    "email" -> member(string, _.email),
+    "password" -> member(string, _.password),
+    "age" -> member(option(int), _.age, Some(None)),
+    "countries" -> member(list(string), _.countries, Some(List("Holland"))),
+    "bookingProcess" -> member(BookingProcess.codec, _.bookingProcess, Some(BookingProcess.Cancelled(2)))
   )
 }

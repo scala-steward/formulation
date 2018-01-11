@@ -9,7 +9,7 @@ import scala.annotation.implicitNotFound
 
 @implicitNotFound(msg = "AvroEncoder[${A}] not found, did you implicitly define Avro[${A}]?")
 abstract class AvroEncoder[A](val name: Option[RecordFqdn]) {
-  def encode(schema: Schema, value: A): Any
+  def encode(schema: Schema, value: A): (Schema, Any)
 }
 
 object AvroEncoder {
@@ -17,42 +17,46 @@ object AvroEncoder {
   import scala.collection.JavaConverters._
 
   def by[A, B](fa: AvroEncoder[A])(f: B => A): AvroEncoder[B] = new AvroEncoder[B](fa.name) {
-    override def encode(schema: Schema, value: B): Any = fa.encode(schema, f(value))
+    override def encode(schema: Schema, value: B): (Schema, Any) = fa.encode(schema, f(value))
   }
 
-  def create[A](f: (Schema, A) => Any): AvroEncoder[A] = new AvroEncoder[A](None) {
-    override def encode(schema: Schema, value: A): Any = f(schema, value)
+  def create[A](f: (Schema, A) => (Schema, Any)): AvroEncoder[A] = new AvroEncoder[A](None) {
+    override def encode(schema: Schema, value: A): (Schema, Any) = f(schema, value)
+  }
+
+  def identity[A]: AvroEncoder[A] = new AvroEncoder[A](None) {
+    override def encode(schema: Schema, value: A): (Schema, Any) = schema -> value
   }
 
   def createNamed[A](namespace: String, name: String)(f: (Schema, A) => Any): AvroEncoder[A] = new AvroEncoder[A](Some(RecordFqdn(namespace, name))) {
-    override def encode(schema: Schema, value: A): Any = f(schema, value)
+    override def encode(schema: Schema, value: A): (Schema, Any) = schema -> f(schema, value)
   }
 
   implicit def apply[A](implicit A: Avro[A]): AvroEncoder[A] = A.apply[AvroEncoder]
 
   implicit val interpreter: AvroAlgebra[AvroEncoder] = new AvroAlgebra[AvroEncoder] with AvroEncoderRecordN {
 
-    override val string: AvroEncoder[String] = AvroEncoder.create((_, v) => v)
+    override val string: AvroEncoder[String] = identity
 
-    override val int: AvroEncoder[Int] = AvroEncoder.create((_, v) => v)
+    override val int: AvroEncoder[Int] = identity
 
-    override val bool: AvroEncoder[Boolean] = AvroEncoder.create((_, v) => v)
+    override val bool: AvroEncoder[Boolean] = identity
 
-    override val float: AvroEncoder[Float] = AvroEncoder.create((_, v) => v)
+    override val float: AvroEncoder[Float] = identity
 
-    override val byteArray: AvroEncoder[Array[Byte]] = AvroEncoder.create((_, v) => ByteBuffer.wrap(v))
+    override val byteArray: AvroEncoder[Array[Byte]] = AvroEncoder.create((s, v) => s -> ByteBuffer.wrap(v))
 
-    override val double: AvroEncoder[Double] = AvroEncoder.create((_, v) => v)
+    override val double: AvroEncoder[Double] = identity
 
-    override val long: AvroEncoder[Long] = AvroEncoder.create((_, v) => v)
+    override val long: AvroEncoder[Long] = identity
 
-    override val cnil: AvroEncoder[CNil] = AvroEncoder.create((_, v) => null)
+    override val cnil: AvroEncoder[CNil] = AvroEncoder.create((s, v) => s -> null)
 
-    override def bigDecimal(scale: Int, precision: Int): AvroEncoder[BigDecimal] = AvroEncoder.create { case (_, v: BigDecimal) =>
+    override def bigDecimal(scale: Int, precision: Int): AvroEncoder[BigDecimal] = AvroEncoder.create { case (s, v: BigDecimal) =>
       val decimalType = LogicalTypes.decimal(precision, scale)
       val decimalConversion = new Conversions.DecimalConversion
 
-      decimalConversion.toBytes(v.setScale(scale).bigDecimal, null, decimalType)
+      s -> decimalConversion.toBytes(v.setScale(scale).bigDecimal, null, decimalType)
     }
 
     override def imap[A, B](fa: AvroEncoder[A])(f: A => B)(g: B => A): AvroEncoder[B] =
@@ -60,11 +64,11 @@ object AvroEncoder {
 
     override def option[A](from: AvroEncoder[A]): AvroEncoder[Option[A]] = AvroEncoder.create {
       case (schema, Some(value)) => from.encode(schema, value)
-      case (_, None) => null
+      case (schema, None) => schema -> null
     }
 
     override def list[A](of: AvroEncoder[A]): AvroEncoder[List[A]] =
-      AvroEncoder.create((schema, list) => list.map(of.encode(schema.getElementType, _)).asJava)
+      AvroEncoder.create((schema, list) => schema -> list.map(of.encode(schema.getElementType, _)._2).asJava)
 
     override def pmap[A, B](fa: AvroEncoder[A])(f: A => Attempt[B])(g: B => A): AvroEncoder[B] =
       AvroEncoder.create((schema, b) => fa.encode(schema, g(b)))
@@ -76,7 +80,7 @@ object AvroEncoder {
     override def seq[A](of: AvroEncoder[A]): AvroEncoder[Seq[A]] = by(list(of))(_.toList)
 
     override def map[K, V](of: AvroEncoder[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroEncoder[Map[K, V]] =
-      AvroEncoder.create((schema, mm) => mm.map { case (k, v) => contramapKey(k) -> of.encode(schema.getValueType, v) }.asJava)
+      AvroEncoder.create((schema, mm) => schema -> mm.map { case (k, v) => contramapKey(k) -> of.encode(schema.getValueType, v)._2 }.asJava)
 
     override def or[A, B](fa: AvroEncoder[A], fb: AvroEncoder[B]): AvroEncoder[Either[A, B]] =
       AvroEncoder.create { case (schema, value) =>

@@ -1,52 +1,11 @@
 package formulation
 
+import cats.{Applicative, Invariant, ~>}
 import org.codehaus.jackson.JsonNode
 import shapeless.ops.coproduct.Align
 import shapeless.{Coproduct, Generic}
 
 import scala.util.Try
-
-
-trait ~>[F[_], G[_]] {
-  def apply[A](fa: F[A]): G[A]
-}
-
-trait InvariantFunctor[F[_]] {
-  def imap[A, B](fa: F[A])(f: A => B)(g: B => A): F[B]
-}
-
-trait Traverse[F[_]] {
-  def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
-}
-
-object Traverse {
-  val listInstance: Traverse[List] = new Traverse[List] {
-    def traverse[G[_], A, B](l: List[A])(f: A => G[B])(implicit G: Applicative[G]): G[List[B]] = {
-      l.foldRight(G.pure(List.empty[B])) {
-        (hd, init) => Applicative.map2(f(hd), init)(_ :: _)
-      }
-    }
-  }
-}
-
-trait Applicative[F[_]] {
-  def pure[A](a: A): F[A]
-  def ap[A,B](fa: F[A])(f: F[A => B]): F[B]
-}
-
-object Applicative {
-  private[formulation] def map2[F[_],A,B,C](fa: F[A], fb: F[B])(f: (A, B) => C)(implicit F: Applicative[F]): F[C] =
-    F.ap(fb)(F.ap(fa)(F.pure(f.curried)))
-
-  private[formulation] def map3[F[_],A,B,C, D](fa: F[A], fb: F[B], fc: F[C])(f: (A, B, C) => D)(implicit F: Applicative[F]): F[D] =
-    F.ap(fc)(F.ap(fb)(F.ap(fa)(F.pure(f.curried))))
-
-  implicit val attempt: Applicative[Attempt] = new Applicative[Attempt] {
-    override def pure[A](a: A): Attempt[A] = Attempt.Success(a)
-    override def ap[A, B](fa: Attempt[A])(f: Attempt[A => B]): Attempt[B] = f.flatMap(ff => fa.map(ff))
-  }
-}
-
 
 sealed trait Attempt[+A] { self =>
   def flatMap[B](f: A => Attempt[B]): Attempt[B] = self match {
@@ -107,6 +66,17 @@ object Attempt {
     case None => error(ifEmpty)
     case Some(value) => success(value)
   }
+
+  def or[A](left: Attempt[A], right: => Attempt[A]): Attempt[A] =
+    left match {
+      case Attempt.Success(v) => Attempt.success(v)
+      case Attempt.Error(_) => right
+    }
+
+  implicit val attempt: Applicative[Attempt] = new Applicative[Attempt] {
+    override def pure[A](a: A): Attempt[A] = Attempt.Success(a)
+    override def ap[A, B](ff: Attempt[A => B])(fa: Attempt[A]): Attempt[B] = ff.flatMap(f => fa.map(f))
+  }
 }
 
 final case class Member[F[_], A, B] (typeClass: F[A], getter: B => A, defaultValue: Option[JsonNode] = None) {
@@ -120,7 +90,7 @@ trait Transformer[F[_], I, O] {
 
 object Transformer {
   implicit def alignedCoproduct[F[_], I <: Coproduct, Repr <: Coproduct, O](implicit
-                                                                            I: InvariantFunctor[F],
+                                                                            I: Invariant[F],
                                                                             G: Generic.Aux[O, Repr],
                                                                             TA: Align[Repr, I],
                                                                             FA: Align[I, Repr]): Transformer[F, I, O] = new Transformer[F, I, O] {

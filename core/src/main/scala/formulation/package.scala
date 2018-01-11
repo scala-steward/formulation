@@ -8,9 +8,6 @@ import scala.util.control.NonFatal
 
 package object formulation extends AvroDsl {
 
-  private val encoderFactory = EncoderFactory.get()
-  private val decoderFactory = DecoderFactory.get()
-
   def member[A, B](avro: Avro[A], getter: B => A, defaultValue: Option[A] = None): Member[Avro, A, B] =
     Member[Avro, A, B](avro, getter, defaultValue.map(v => avro.apply[AvroDefaultValuePrinter].print(v)))
 
@@ -19,10 +16,11 @@ package object formulation extends AvroDsl {
 
     try {
       val schema = S.generateSchema
-      val dataWriter = new GenericDatumWriter[GenericRecord](schema)
-      val encoder = encoderFactory.directBinaryEncoder(os, null)
+      val (usedSchema, record : GenericRecord) = R.encode(schema, value)
+      val dataWriter = new GenericDatumWriter[GenericRecord](usedSchema)
+      val encoder = EncoderFactory.get().directBinaryEncoder(os, null)
 
-      dataWriter.write(R.encode(schema, value).asInstanceOf[GenericRecord], encoder)
+      dataWriter.write(record, encoder)
 
       encoder.flush()
 
@@ -43,11 +41,10 @@ package object formulation extends AvroDsl {
       val wSchema = writerSchema.getOrElse(schema)
       val rSchema = readerSchema.getOrElse(schema)
       val datumReader = new GenericDatumReader[GenericRecord](wSchema, rSchema)
-      val binDecoder = decoderFactory.directBinaryDecoder(in, null)
-
+      val binDecoder = DecoderFactory.get().directBinaryDecoder(in, null)
       val record = datumReader.read(null, binDecoder)
 
-      R.decode(record)
+      R.decode(rSchema, record)
     }
     catch {
       case NonFatal(ex) => Attempt.exception(DecodeError(ex))

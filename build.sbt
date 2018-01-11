@@ -2,6 +2,7 @@ val core = project.in(file("core"))
   .settings(commonSettings("core"))
   .settings(
     libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % "1.0.1",
       "org.apache.avro" % "avro" % "1.8.2",
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
@@ -12,24 +13,36 @@ val core = project.in(file("core"))
 val refined = project.in(file("refined"))
   .settings(commonSettings("refined"))
   .settings(
-    coverageExcludedPackages := "formulation.*",
     libraryDependencies ++= Seq(
       "eu.timepit" %% "refined" % "0.8.6"
     )
   )
   .dependsOn(core)
 
+val schemaRegistry = project.in(file("schema-registry"))
+  .settings(commonSettings("schema-registry"))
+  .dependsOn(core)
+
+val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-sttp"))
+  .settings(commonSettings("schema-registry-confluent-sttp"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.softwaremill.sttp" %% "core" % "1.1.3",
+      "org.spire-math" %% "jawn-ast" % "0.11.0"
+    )
+  )
+  .dependsOn(schemaRegistry)
+
 val tests = project.in(file("tests"))
   .settings(noPublishSettings)
   .settings(commonSettings("tests"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "1.0.1" % Test,
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
   )
-  .dependsOn(core, refined)
+  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp)
 
 
 val benchmark = project.in(file("benchmark"))
@@ -55,7 +68,7 @@ lazy val noPublishSettings = Seq(
 
 def commonSettings(n: String) = Seq(
   name := s"formulation-$n",
-  version := "0.1.0",
+  version := "0.2.0",
   organization := "net.vectos",
   crossScalaVersions := Seq("2.11.12", "2.12.4"),
   scalaVersion := "2.12.4",
@@ -132,4 +145,4 @@ val scalacOptions212 = Seq(
 
 val root = project.in(file("."))
   .settings(commonSettings("core") ++ noPublishSettings)
-  .aggregate(core, refined)
+  .aggregate(core, refined, schemaRegistry, schemaRegistryConfluentSttp)

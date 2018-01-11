@@ -4,6 +4,7 @@ import java.time._
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
+import cats.Invariant
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.util.Try
@@ -107,7 +108,7 @@ trait AvroDsl extends AvroDslRecordN { self =>
       new UnionBuilder[CNil](cnil).add(fb).add(fa)
   }
 
-  implicit val invariantFunctor: InvariantFunctor[Avro] = new InvariantFunctor[Avro] {
+  implicit val invariantFunctor: Invariant[Avro] = new Invariant[Avro] {
     override def imap[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] = self.imap(fa)(f)(g)
   }
 

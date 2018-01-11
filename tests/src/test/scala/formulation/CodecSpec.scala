@@ -1,6 +1,6 @@
 package formulation
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{Instant, LocalDate, LocalDateTime}
 import java.util
 import java.util.UUID
 
@@ -39,6 +39,9 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
     }
     "work with LocalDate" in {
       forAll { (a: LocalDate) => assert(a, localDate) }
+    }
+    "work with Instant" in {
+      forAll { (a: Instant) => assert(a, instant) }
     }
     "work with LocalDateTime" in {
       forAll { (a: LocalDateTime) => assert(a, localDateTime) }
@@ -103,5 +106,5 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
   implicit val eqLocalDateTime: Eq[LocalDateTime] = Eq.fromUniversalEquals[LocalDateTime]
   implicit val eqArrayByte: Eq[Array[Byte]] = Eq.instance[Array[Byte]]((x, y) => util.Arrays.equals(x, y))
   implicit def eqSeq[A](implicit E: Eq[A]): Eq[Seq[A]] = Eq.instance[Seq[A]] { case (x, y) => (x zip y).forall(l => E.eqv(l._1, l._2)) }
-
+  implicit val eqInstant: Eq[Instant] = Eq.instance(_.toEpochMilli == _.toEpochMilli)
 }

@@ -1,6 +1,6 @@
 package formulation
 
-import java.time.{LocalDate, LocalDateTime, LocalTime}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import org.scalacheck.{Arbitrary, Gen}
@@ -40,6 +40,9 @@ trait ArbitraryHelpers {
     } yield LocalDate.of(year, month, day)
   }
 
+  implicit val instantArb: Arbitrary[Instant] = Arbitrary {
+    Gen.choose(0, Long.MaxValue).map(ts => Instant.ofEpochMilli(ts))
+  }
 
   implicit val localDateTineArb: Arbitrary[LocalDateTime] = Arbitrary {
     for {
@@ -50,5 +53,27 @@ trait ArbitraryHelpers {
       minute <- Gen.choose(0, 59)
       second <- Gen.choose(0, 59)
     } yield LocalDateTime.of(LocalDate.of(year, month, day), LocalTime.of(hour, minute, second))
+  }
+
+  implicit val userV1Arb: Arbitrary[UserV1] = Arbitrary {
+    for {
+      userId <- Gen.choose(0, Int.MaxValue).map(UserId)
+      username <- Gen.alphaStr
+      email <- Gen.alphaStr
+      password <- Gen.alphaStr
+    } yield UserV1(userId, username, email, password)
+  }
+
+  implicit val userV2Arb: Arbitrary[UserV2] = Arbitrary {
+    for {
+      userId <- Gen.choose(0, Int.MaxValue).map(UserId)
+      username <- Gen.alphaStr
+      email <- Gen.alphaStr
+      password <- Gen.alphaStr
+      age <- Gen.option(Gen.choose(0, 99))
+      countries <- Gen.listOf(Gen.alphaStr)
+      bookingProcess <- bookingProcessArb.arbitrary
+      money <- Gen.choose(0, Int.MaxValue).map(BigDecimal.apply)
+    } yield UserV2(userId, username, email, password, age, countries, bookingProcess, money)
   }
 }

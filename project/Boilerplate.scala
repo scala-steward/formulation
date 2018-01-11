@@ -111,6 +111,8 @@ object Boilerplate {
       block"""
         |package formulation
         |
+        |import cats.~>
+        |
         |trait AvroDslRecordN {
         |  private def naturalTransformation[G[_] : AvroAlgebra]: (Avro ~> G) = new (Avro ~> G) {
         |    override def apply[A](fa: Avro[A]): G[A] = fa.apply[G]
@@ -153,17 +155,19 @@ object Boilerplate {
       import tv._
 
       val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroDecoder, $tpe, Z])"} mkString ", "
-      val applies = synTypes map { tpe => s"${tpe.toLowerCase} <- param$tpe._2.typeClass.decode(r.get(param$tpe._1))"} mkString "; "
+      val applies = synTypes map { tpe => s"${tpe.toLowerCase} <- param$tpe._2.typeClass.decode(s.getField(param$tpe._1).schema, r.get(param$tpe._1))"} mkString "; "
 
       block"""
         |package formulation
         |
         |import org.apache.avro.generic.GenericRecord
+        |import org.apache.avro.Schema
         |
         |trait AvroDecoderRecordN { self: AvroAlgebra[AvroDecoder] =>
-        |  private def record[A](f: GenericRecord => Attempt[A]) = AvroDecoder.partial { case record: GenericRecord => f(record) }
+        |  private def record[A](namespace: String, name: String)(f: (Schema, GenericRecord) => Attempt[A]) =
+        |   AvroDecoder.partialWithSchema { case (s, record: GenericRecord) if s.getType == Schema.Type.RECORD && s.getNamespace == namespace && s.getName == name => f(s, record) }
         |
-        -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = record { r => for { $applies } yield f(${`a..n`}) }
+        -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = record(namespace, name) { case (s,r) => for { $applies } yield f(${`a..n`}) }
         |}
         |
       """
@@ -177,7 +181,7 @@ object Boilerplate {
       import tv._
 
       val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroEncoder, $tpe, Z])"} mkString ", "
-      val applies = synTypes map { tpe => s"r.put(param$tpe._1, param$tpe._2.typeClass.encode(s.getField(param$tpe._1).schema(), param$tpe._2.getter(v)))"} mkString "; "
+      val applies = synTypes map { tpe => s"r.put(param$tpe._1, param$tpe._2.typeClass.encode(s.getField(param$tpe._1).schema(), param$tpe._2.getter(v))._2)"} mkString "; "
 
       block"""
         |package formulation
