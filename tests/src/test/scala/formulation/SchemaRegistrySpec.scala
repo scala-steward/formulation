@@ -17,7 +17,10 @@ class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks wit
   private val entries = List(
     SchemaEntry(1, "formulation.DateSelected", schema[BookingProcess.DateSelected]),
     SchemaEntry(2, "formulation.Cancelled", schema[BookingProcess.Cancelled]),
-    SchemaEntry(3, "formulation.NotStarted", schema[BookingProcess.NotStarted])
+    SchemaEntry(3, "formulation.NotStarted", schema[BookingProcess.NotStarted]),
+    SchemaEntry(4, "event.Completed", schema[Event.Completed]),
+    SchemaEntry(5, "event.Failed", schema[Event.Failed]),
+    SchemaEntry(6, "event.Started", schema[Event.Started])
   )
   private def registryState(schemaEntries: List[SchemaEntry] = entries, compatLevels: Map[String, AvroSchemaCompatibility] = Map.empty) =
     SchemaRegistryState(compatLevels, schemaEntries)
@@ -25,8 +28,8 @@ class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks wit
   "SchemaRegistry" should {
 
     "encode/decode into symmetrical results with unions" in {
-      forAll { (bookingProcess: BookingProcess) =>
-        (sr.encode(bookingProcess) >>= sr.decode[BookingProcess]).runA(registryState()).value.value shouldBe Right(Attempt.success(bookingProcess))
+      forAll { (event: Event) =>
+        (sr.encode(event) >>= sr.decode[Event]).runA(registryState()).value.value shouldBe Right(Attempt.success(event))
       }
     }
 

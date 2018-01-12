@@ -21,14 +21,23 @@ trait ArbitraryHelpers {
     def genCancelled = Gen.const(BookingProcess.Cancelled(2))
     def genDateSelected = localDateTineArb.arbitrary.map(date => BookingProcess.DateSelected(1, date))
 
-    for {
-      caze <- Gen.choose(0, 2)
-      process <- caze match {
-        case 0 => genNotStarted
-        case 1 => genDateSelected
-        case 2 => genCancelled
-      }
-    } yield process
+    Gen.oneOf(
+      genNotStarted,
+      genDateSelected,
+      genCancelled
+    )
+  }
+
+  implicit val eventArb: Arbitrary[Event] = Arbitrary {
+    def completed = instantArb.arbitrary.map(Event.Completed)
+    def started = instantArb.arbitrary.map(Event.Started)
+    def failed = instantArb.arbitrary.map(Event.Failed)
+
+    Gen.oneOf(
+      completed,
+      started,
+      failed
+    )
   }
 
   implicit val uuidArb: Arbitrary[UUID] = Arbitrary(Gen.uuid)

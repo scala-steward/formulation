@@ -165,7 +165,7 @@ object Boilerplate {
         |
         |trait AvroDecoderRecordN { self: AvroAlgebra[AvroDecoder] =>
         |  private def record[A](namespace: String, name: String)(f: (Schema, GenericRecord) => Attempt[A]) =
-        |   AvroDecoder.partialWithSchema { case (s, record: GenericRecord) if s.getType == Schema.Type.RECORD && s.getNamespace == namespace && s.getName == name => f(s, record) }
+        |   AvroDecoder.partialWithSchema { case (s, record: GenericRecord) if s.getType == Schema.Type.RECORD && record.getSchema.getFullName == namespace + "." + name => f(s, record) }
         |
         -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = record(namespace, name) { case (s,r) => for { $applies } yield f(${`a..n`}) }
         |}
