@@ -1,9 +1,10 @@
 package formulation
 
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
+import java.time._
 import java.util.UUID
 
 import org.scalacheck.{Arbitrary, Gen}
+import scala.collection.JavaConverters._
 
 trait ArbitraryHelpers {
 
@@ -15,6 +16,13 @@ trait ArbitraryHelpers {
 
     Gen.nonEmptyListOf(genKv).map(_.toMap)
   }
+
+  implicit val zonedDateTimeArb: Arbitrary[ZonedDateTime] = Arbitrary(
+    for {
+      instant <- instantArb.arbitrary
+      zoneId  <- Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList.filter(_ != "GMT0")).map(ZoneId.of)
+    } yield ZonedDateTime.ofInstant(instant, zoneId)
+  )
 
   implicit val bookingProcessArb: Arbitrary[BookingProcess] = Arbitrary {
     def genNotStarted = Gen.const(BookingProcess.NotStarted(0))
