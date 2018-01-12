@@ -1,9 +1,10 @@
 package formulation
 
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
+import java.time._
 import java.util.UUID
 
 import org.scalacheck.{Arbitrary, Gen}
+import scala.collection.JavaConverters._
 
 trait ArbitraryHelpers {
 
@@ -16,19 +17,35 @@ trait ArbitraryHelpers {
     Gen.nonEmptyListOf(genKv).map(_.toMap)
   }
 
+  implicit val zonedDateTimeArb: Arbitrary[ZonedDateTime] = Arbitrary(
+    for {
+      instant <- instantArb.arbitrary
+      zoneId  <- Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList.filter(_ != "GMT0")).map(ZoneId.of)
+    } yield ZonedDateTime.ofInstant(instant, zoneId)
+  )
+
   implicit val bookingProcessArb: Arbitrary[BookingProcess] = Arbitrary {
     def genNotStarted = Gen.const(BookingProcess.NotStarted(0))
     def genCancelled = Gen.const(BookingProcess.Cancelled(2))
     def genDateSelected = localDateTineArb.arbitrary.map(date => BookingProcess.DateSelected(1, date))
 
-    for {
-      caze <- Gen.choose(0, 2)
-      process <- caze match {
-        case 0 => genNotStarted
-        case 1 => genDateSelected
-        case 2 => genCancelled
-      }
-    } yield process
+    Gen.oneOf(
+      genNotStarted,
+      genDateSelected,
+      genCancelled
+    )
+  }
+
+  implicit val eventArb: Arbitrary[Event] = Arbitrary {
+    def completed = instantArb.arbitrary.map(Event.Completed)
+    def started = instantArb.arbitrary.map(Event.Started)
+    def failed = instantArb.arbitrary.map(Event.Failed)
+
+    Gen.oneOf(
+      completed,
+      started,
+      failed
+    )
   }
 
   implicit val uuidArb: Arbitrary[UUID] = Arbitrary(Gen.uuid)

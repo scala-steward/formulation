@@ -77,10 +77,11 @@ Format module: `net.vectos" %% "formulation-$module" % "$version"` where $module
 | `Either[L, R]`            | `or`                 |                                                                               |
 | `Array[Byte]`             | `byteArray`          | It's encoded as bytes (`ByteBuffer`)                                          |
 | `BigDecimal`              | `bigDecimal`         | Uses `byteArray` under the hood, it's encoded as bytes                        |
-| `java.util.UUID`          | `uuid`               | Uses `string` under the hood using                                            |
-| `java.time.Instant`       | `instant`            | Uses `long` under the hood using                                              |
+| `java.util.UUID`          | `uuid`               | Uses `string` under the hood                                                  |
+| `java.time.Instant`       | `instant`            | Uses `long` under the hood                                                    |
 | `java.time.LocalDate`     | `localDate`          | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE`)       |
 | `java.time.LocalDateTime` | `localDateTime`      | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE_TIME`)  |
+| `java.time.ZoneDateTime`  | `zoneDateTime `      | Uses `string` under the hood `DateTimeFormat` (`yyyy-MM-dd'T'HH:mm:ssZ`)      |
 
 
 

@@ -1,6 +1,6 @@
 package formulation
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime}
 
 case class Generic[T](value: T)
 
@@ -38,3 +38,16 @@ object BookingProcess {
     (dateDeselected | notStarted | cancelled).as[BookingProcess]
 }
 
+sealed trait Event
+
+object Event {
+  case class Completed(at: Instant) extends Event
+  case class Failed(at: Instant) extends Event
+  case class Started(at: Instant) extends Event
+
+  implicit val completed: Avro[Completed] = record1("event", "Completed")(Completed.apply)("at" -> member(instant, _.at))
+  implicit val failed: Avro[Failed] = record1("event", "Failed")(Failed.apply)("at" -> member(instant, _.at))
+  implicit val started: Avro[Started] = record1("event", "Started")(Started.apply)("at" -> member(instant, _.at))
+
+  implicit val codec: Avro[Event] = (completed | failed | started).as[Event]
+}

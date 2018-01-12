@@ -63,6 +63,12 @@ trait AvroDsl extends AvroDslRecordN { self =>
   val localDateTime: Avro[LocalDateTime] =
     string.pmap(str => Attempt.fromTry(Try(LocalDateTime.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
 
+  val zonedDateTime: Avro[ZonedDateTime] = {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
+
+    string.pmap(str => Attempt.fromTry(Try(ZonedDateTime.parse(str, formatter))))(_.format(formatter))
+  }
+
   def imap[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] = new Avro[B] {
     override def apply[F[_] : AvroAlgebra]: F[B] = implicitly[AvroAlgebra[F]].imap(fa.apply[F])(f)(g)
   }
