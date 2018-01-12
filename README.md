@@ -54,9 +54,9 @@ Format module: `net.vectos" %% "formulation-$module" % "$version"` where $module
 | Module                            | Dependencies                  | Remark                                                                        |
 | ----------------------------------|-------------------------------|-------------------------------------------------------------------------------|
 | core                              | cats, shapeless, avro         | Contains the DSL and basic encoding/decoding/schema support                   |
-| refine                            | core, refined                 | Refinement types support                                                      |
+| refined                           | core, refined                 | Refinement types support                                                      |
 | schema-registry                   | core                          | Interfaces for interacting with schema-registry                               |
-| schema-registry-sttp-confluent    | schema-registry, sttp         | `SchemaRegistryClient` confluent schema-registry sttp implementation          |
+| schema-registry-confluent-sttp    | schema-registry, sttp         | `SchemaRegistryClient` confluent schema-registry sttp implementation          |
  
 ### Supported primitives
 
