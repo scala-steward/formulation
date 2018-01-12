@@ -18,13 +18,30 @@ Why use Formulation?
 - _Define data types by hand_ - Avro4s derives schema's, encoders and decoders "magically". While this is nice, it can become unwieldy when you have a nested type graph. I believe it's better to explicitly map your data types, so the cognitive process of defining a schema is part of your job instead of a magic macro. This will become important when you want to enforce full compatibility of your schema's
 - _Concise_ - The combinators `imap` and `pmap` makes it easy to introduce support for new data types, while this is verbose in Avro4s. Also the DSL provides a way of describing a schema in type-safe and terse fashion instead of typing JSON files.
 
+### Minimal example
+
+```scala
+import formulation._
+
+case class Person(name: String, age: Int)
+
+object Person {
+  implicit val codec: Avro[Person] = record2("user", "Person")(Person.apply)(
+    "name" -> member(string, _.name),
+    "age" -> member(int, _.age)
+  )
+}
+
+//encode to a Array[Byte], then decode which yields a `Attempt[Person]`
+decode[Person](encode(Person("Mark", 1337))
+
+//will print the schema as JSON
+schema[Person].toString
+```
 
 ### Dependencies
 
-The library only relies on avro and shapeless as dependencies.
-
-- Core `"net.vectos" %% "formulation-core" % "0.1.0"`
-- Refined `"net.vectos" %% "formulation-refined" % "0.1.0"`
+Current version: `0.2.1`
 
 You need to add the bintray resolver
 
@@ -32,6 +49,15 @@ You need to add the bintray resolver
 resolvers += Resolver.bintrayRepo("fristi", "maven")
 ```
 
+Format module: `net.vectos" %% "formulation-$module" % "$version"` where $module (module below) and $version is current version. 
+
+| Module                            | Dependencies                  | Remark                                                                        |
+| ----------------------------------|-------------------------------|-------------------------------------------------------------------------------|
+| core                              | cats, shapeless, avro         | Contains the DSL and basic encoding/decoding/schema support                   |
+| refine                            | core, refined                 | Refinement types support                                                      |
+| schema-registry                   | core                          | Interfaces for interacting with schema-registry                               |
+| schema-registry-sttp-confluent    | schema-registry, sttp         | `SchemaRegistryClient` confluent schema-registry sttp implementation          |
+ 
 ### Supported primitives
 
 
@@ -57,26 +83,7 @@ resolvers += Resolver.bintrayRepo("fristi", "maven")
 | `java.time.LocalDateTime` | `localDateTime`      | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE_TIME`)  |
 
 
-### Minimal example
 
-```scala
-import formulation._
-
-case class Person(name: String, age: Int)
-
-object Person {
-  implicit val codec: Avro[Person] = record2("user", "Person")(Person.apply)(
-    "name" -> member(string, _.name),
-    "age" -> member(int, _.age)
-  )
-}
-
-//encode to a Array[Byte], then decode which yields a `Attempt[Person]`
-decode[Person](encode(Person("Mark", 1337))
-
-//will print the schema as JSON
-schema[Person].toString
-```
 
 ### Records up till max arity (22 fields)
 
