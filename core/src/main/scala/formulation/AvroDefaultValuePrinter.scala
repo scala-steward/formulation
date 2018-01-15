@@ -9,6 +9,10 @@ import org.codehaus.jackson.JsonNode
 import org.codehaus.jackson.node._
 import shapeless.CNil
 
+/**
+  * Print a JsonNode given a value (JSON encoder)
+  * @tparam A
+  */
 trait AvroDefaultValuePrinter[A] {
   def print(value: A): JsonNode
 }

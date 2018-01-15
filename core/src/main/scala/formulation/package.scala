@@ -24,6 +24,15 @@ package object formulation extends AvroDsl {
   def member[A, B](avro: Avro[A], getter: B => A, defaultValue: Option[A] = None, documentation: Option[String] = None, aliases: Seq[String] = Seq.empty): Member[Avro, A, B] =
     Member[Avro, A, B](avro, getter, aliases, defaultValue.map(avro.apply[AvroDefaultValuePrinter].print), documentation)
 
+  /**
+    * Encodes a value of type `A` which has a `AvroEncoder` and `AvroSchema` (gained by having a implicit `Avro[A]` in scope).
+    *
+    * @param value The value to encode
+    * @param R The AvroEncoder for this type
+    * @param S The AvroSchema for this type
+    * @tparam A The type of the value to encode
+    * @return A `AvroEncodeResult` which also contains the used `Schema`, useful when want to store it for example.
+    */
   def encoded[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): AvroEncodeResult = {
     val os = new ByteArrayOutputStream()
 
@@ -44,8 +53,27 @@ package object formulation extends AvroDsl {
     }
   }
 
+  /**
+    * Encodes a value of type `A` which has a `AvroEncoder` and `AvroSchema` (gained by having a implicit `Avro[A]` in scope).
+    * @param value The value to encode
+    * @param R The AvroEncoder for this type
+    * @param S The AvroSchema for this type
+    * @tparam A The type of the value to encode
+    * @return A array of bytes
+    */
   def encode[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): Array[Byte] = encoded(value).payload
 
+  /**
+    * Decodes a array of bytes in to a entity
+    *
+    * @param bytes The Avro payload
+    * @param writerSchema The Schema which was used to write this payload
+    * @param readerSchema The Schema which will be used to read this payload
+    * @param R The AvroDecoder for this type
+    * @param S The AvroSchema for this type
+    * @tparam A The type of the value to decode
+    * @return Either a error or the decode value.
+    */
   def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
                (implicit R: AvroDecoder[A], S: AvroSchema[A]): Either[Throwable, A] = {
 
@@ -69,5 +97,11 @@ package object formulation extends AvroDsl {
     }
   }
 
+  /**
+    * Returns the Avro Schema for a type
+    * @param A A implicit Avro available
+    * @tparam A The type of the value to get the Schema from
+    * @return An Avro Schema
+    */
   def schema[A](implicit A: Avro[A]): Schema = A.apply[AvroSchema].generateSchema
 }

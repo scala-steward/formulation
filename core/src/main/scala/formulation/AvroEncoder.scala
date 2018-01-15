@@ -9,8 +9,14 @@ import shapeless.CNil
 
 import scala.annotation.implicitNotFound
 
+/**
+  * Type class which encodes a value in to a tuple of a used Schema, plus a the encoded value. In the end it will be a
+  * `GenericRecord`
+  * @param name The RecordName (fully qualified name)
+  * @tparam A The type of the value to encode
+  */
 @implicitNotFound(msg = "AvroEncoder[${A}] not found, did you implicitly define Avro[${A}]?")
-abstract class AvroEncoder[A](val name: Option[RecordFqdn]) {
+abstract class AvroEncoder[A](val name: Option[RecordName]) {
   def encode(schema: Schema, value: A): (Schema, Any)
 }
 
@@ -30,7 +36,7 @@ object AvroEncoder {
     override def encode(schema: Schema, value: A): (Schema, Any) = schema -> value
   }
 
-  def createNamed[A](namespace: String, name: String)(f: (Schema, A) => Any): AvroEncoder[A] = new AvroEncoder[A](Some(RecordFqdn(namespace, name))) {
+  def createNamed[A](namespace: String, name: String)(f: (Schema, A) => Any): AvroEncoder[A] = new AvroEncoder[A](Some(RecordName(namespace, name))) {
     override def encode(schema: Schema, value: A): (Schema, Any) = schema -> f(schema, value)
   }
 

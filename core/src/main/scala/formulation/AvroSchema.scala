@@ -8,6 +8,10 @@ import shapeless.CNil
 
 import scala.annotation.implicitNotFound
 
+/**
+  * Type class which will generate a Schema when calling `generateSchema`
+  * @tparam A The type of the value to generate Schema from
+  */
 @implicitNotFound(msg = "AvroSchema[${A}] not found, did you implicitly define Avro[${A}]?")
 trait AvroSchema[A] {
   def generateSchema: Schema
