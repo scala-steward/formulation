@@ -1,14 +1,11 @@
 package formulation.schemaregistry
 
-import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
 import cats._
 import cats.implicits._
-import formulation.{Avro, AvroDecoder, AvroEncoder, AvroSchema, AvroSchemaCompatibility}
+import formulation.{Avro, AvroDecoder, AvroEncodeResult, AvroEncoder, AvroSchema, AvroSchemaCompatibility}
 import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
-import org.apache.avro.io.EncoderFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -31,35 +28,15 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
       byteBuffer.array() ++ payload
     }
 
-    def encodeRaw(): F[(Schema, Array[Byte])] = {
-      val os = new ByteArrayOutputStream()
-
-      try {
-        val schema = implicitly[AvroSchema[A]].generateSchema
-        val (usedSchema, record: GenericRecord) = implicitly[AvroEncoder[A]].encode(schema, value)
-        val dataWriter = new GenericDatumWriter[GenericRecord](usedSchema)
-        val encoder = EncoderFactory.get().directBinaryEncoder(os, null)
-
-        dataWriter.write(record, encoder)
-
-        encoder.flush()
-
-        M.pure(usedSchema -> os.toByteArray)
-      }
-      catch {
-        case NonFatal(ex) => M.raiseError(ex)
-      }
-      finally {
-        os.close()
-      }
-    }
+    def encodeRaw(): F[AvroEncodeResult] =
+      try { M.pure(formulation.encoded(value)) } catch { case NonFatal(ex) => M.raiseError(ex) }
 
     for {
       res <- encodeRaw()
-      identifier <- client.getIdBySchema(res._1)
+      identifier <- client.getIdBySchema(res.usedSchema)
       payload <- identifier match {
-        case Some(id) => M.pure(format(id, res._2))
-        case None => M.raiseError[Array[Byte]](new Throwable(s"There was no schema registered for ${res._1.getFullName}"))
+        case Some(id) => M.pure(format(id, res.payload))
+        case None => M.raiseError[Array[Byte]](new Throwable(s"There was no schema registered for ${res.usedSchema.getFullName}"))
       }
     } yield payload
   }

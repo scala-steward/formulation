@@ -24,7 +24,7 @@ package object formulation extends AvroDsl {
   def member[A, B](avro: Avro[A], getter: B => A, defaultValue: Option[A] = None, documentation: Option[String] = None, aliases: Seq[String] = Seq.empty): Member[Avro, A, B] =
     Member[Avro, A, B](avro, getter, aliases, defaultValue.map(avro.apply[AvroDefaultValuePrinter].print), documentation)
 
-  def encode[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): Array[Byte] = {
+  def encoded[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): AvroEncodeResult = {
     val os = new ByteArrayOutputStream()
 
     try {
@@ -37,12 +37,14 @@ package object formulation extends AvroDsl {
 
       encoder.flush()
 
-      os.toByteArray
+      AvroEncodeResult(usedSchema, os.toByteArray)
     }
     finally {
       os.close()
     }
   }
+
+  def encode[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): Array[Byte] = encoded(value).payload
 
   def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
                (implicit R: AvroDecoder[A], S: AvroSchema[A]): Either[Throwable, A] = {
