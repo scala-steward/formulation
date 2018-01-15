@@ -32,7 +32,7 @@ object Person {
   )
 }
 
-//encode to a Array[Byte], then decode which yields a `Attempt[Person]`
+//encode to a Array[Byte], then decode which yields a `Either[Throwable, Person]`
 decode[Person](encode(Person("Mark", 1337))
 
 //will print the schema as JSON
@@ -41,7 +41,7 @@ schema[Person].toString
 
 ### Dependencies
 
-Current version: `0.2.1`
+Current version: `0.3.0`
 
 You need to add the bintray resolver
 
@@ -81,7 +81,7 @@ Format module: `net.vectos" %% "formulation-$module" % "$version"` where $module
 | `java.time.Instant`       | `instant`            | Uses `long` under the hood                                                    |
 | `java.time.LocalDate`     | `localDate`          | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE`)       |
 | `java.time.LocalDateTime` | `localDateTime`      | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE_TIME`)  |
-| `java.time.ZoneDateTime`  | `zoneDateTime `      | Uses `string` under the hood `DateTimeFormat` (`yyyy-MM-dd'T'HH:mm:ssZ`)      |
+| `java.time.ZonedDateTime` | `zonedDateTime `     | Uses `string` under the hood `DateTimeFormat` (`yyyy-MM-dd'T'HH:mm:ssZ`)      |
 
 
 
@@ -113,7 +113,7 @@ When there is a `Avro[A]` implicitly available we can summon a `AvroEncoder[A]` 
 The type signature of `decode` looks like this:
 
 ```
-def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)(implicit R: AvroDecoder[A], S: AvroSchema[A]): Attempt[A]
+def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)(implicit R: AvroDecoder[A], S: AvroSchema[A]): Either[Throwable, A]
 ```
 
 You can provide a `writerSchema` in case you know the schema it's written with. If it's not supplied it will default to the `S: AvroSchema[A]`.
@@ -151,12 +151,12 @@ Each combinator (e.g.: `int`) supports also has the `pmap` combinator which allo
 The signature of `pmap` is:
 
 ```
-def pmap[B](f: A => Attempt[B])(g: B => A): Avro[B]
+def pmap[B](f: A => Either[Throwable, B])(g: B => A): Avro[B]
 ```
 
-While encoding we always have the function of `g: B => A`, while decoding we have the function of `f: A => Attempt[B]`.
+While encoding we always have the function of `g: B => A`, while decoding we have the function of `f: A => Either[Throwable, B]`.
 
-The decoding might fail, therefore we return a `Attempt[A]`. If you would like to support for example string based enumerations you can do it yourself:
+The decoding might fail, therefore we return a `Either[Throwable, A]`. If you would like to support for example string based enumerations you can do it yourself:
 
 ```scala
 trait Enum[A] {
@@ -182,17 +182,9 @@ object Color {
 }
 
 def enum[A](implicit E: Enum[A]) =
-    string.pmap(str => E.allValues.find(x => E.asString(x) == str).fold[Attempt[A]](Attempt.error(s"Value $str not found"))(Attempt.success))(E.asString)
+    string.pmap(str => E.allValues.find(x => E.asString(x) == str).fold[Either[Throwable, A]](Left(new Throwable(s"Value $str not found")))(Right.apply))(E.asString)
 
 ```
-
-#### Attempt
-
-Attempt has two cases `Success` and `Error`. It supports several combinators
-
-- `Attempt.fromEither` - Convert a `Either[L, R]` to `Attempt[R]`
-- `Attempt.fromTry` - Convert a `Try[A]` to `Attempt[A]`
-- `Attempt.fromOption` - Convert a `Option[A]` to `Attempt[A]`
 
 ### Sum types
 

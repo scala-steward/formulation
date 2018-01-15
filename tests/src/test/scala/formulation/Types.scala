@@ -51,3 +51,23 @@ object Event {
 
   implicit val codec: Avro[Event] = (completed | failed | started).as[Event]
 }
+
+sealed trait Fault
+
+object Fault {
+  case class Error(id: Int, message: String) extends Fault
+  case class Failure(id: Int, message: Map[String, String], recoverable: Boolean) extends Fault
+
+  implicit val error: Avro[Error] = record2("fault", "Error")(Error.apply)(
+    "id" -> member(int, _.id),
+    "message" -> member(string, _.message)
+  )
+
+  implicit val failure: Avro[Failure] = record3("fault", "Failure")(Failure.apply)(
+    "id" -> member(int, _.id),
+    "message" -> member(map(string)(Right.apply)(identity), _.message),
+    "recoverable" -> member(bool, _.recoverable)
+  )
+
+  implicit val codec: Avro[Fault] = (error | failure).as[Fault]
+}

@@ -33,7 +33,7 @@ class CompatibilitySpec extends WordSpec with Matchers {
 
       val bytes = encode(UserV1(UserId(1), "Mark", "mail@markdejong.org", "it-so-secret"))
 
-      decode[UserV2](bytes, Some(v1)) shouldBe Attempt.success(
+      decode[UserV2](bytes, Some(v1)) shouldBe Right(
         UserV2(UserId(1), "Mark", "mail@markdejong.org", "it-so-secret", None, List("Holland"), BookingProcess.Cancelled(2), 1000))
 
     }

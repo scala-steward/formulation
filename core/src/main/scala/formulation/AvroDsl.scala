@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import cats.Invariant
+import cats.implicits._
 import shapeless.{:+:, CNil, Coproduct, Inl, Inr}
 
 import scala.util.Try
@@ -52,28 +53,28 @@ trait AvroDsl extends AvroDslRecordN { self =>
   }
 
   val uuid: Avro[UUID] =
-    string.pmap(str => Attempt.fromTry(Try(UUID.fromString(str))))(_.toString)
+    string.pmap(str => Either.fromTry(Try(UUID.fromString(str))))(_.toString)
 
   val instant: Avro[Instant] =
-    long.pmap(ts => Attempt.fromTry(Try(Instant.ofEpochMilli(ts))))(_.toEpochMilli)
+    long.pmap(ts => Either.fromTry(Try(Instant.ofEpochMilli(ts))))(_.toEpochMilli)
 
   val localDate: Avro[LocalDate] =
-    string.pmap(str => Attempt.fromTry(Try(LocalDate.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE))
+    string.pmap(str => Either.fromTry(Try(LocalDate.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE))
 
   val localDateTime: Avro[LocalDateTime] =
-    string.pmap(str => Attempt.fromTry(Try(LocalDateTime.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+    string.pmap(str => Either.fromTry(Try(LocalDateTime.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
 
   val zonedDateTime: Avro[ZonedDateTime] = {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
 
-    string.pmap(str => Attempt.fromTry(Try(ZonedDateTime.parse(str, formatter))))(_.format(formatter))
+    string.pmap(str => Either.fromTry(Try(ZonedDateTime.parse(str, formatter))))(_.format(formatter))
   }
 
   def imap[A, B](fa: Avro[A])(f: A => B)(g: B => A): Avro[B] = new Avro[B] {
     override def apply[F[_] : AvroAlgebra]: F[B] = implicitly[AvroAlgebra[F]].imap(fa.apply[F])(f)(g)
   }
 
-  def pmap[A, B](fa: Avro[A])(f: A => Attempt[B])(g: B => A): Avro[B] = new Avro[B] {
+  def pmap[A, B](fa: Avro[A])(f: A => Either[Throwable, B])(g: B => A): Avro[B] = new Avro[B] {
     override def apply[F[_] : AvroAlgebra]: F[B] = implicitly[AvroAlgebra[F]].pmap(fa.apply[F])(f)(g)
   }
 
@@ -97,7 +98,7 @@ trait AvroDsl extends AvroDslRecordN { self =>
     override def apply[F[_] : AvroAlgebra]: F[Seq[A]] = implicitly[AvroAlgebra[F]].seq(of.apply[F])
   }
 
-  def map[K, V](of: Avro[V])(mapKey: String => Attempt[K])(contramapKey: K => String): Avro[Map[K, V]] = new Avro[Map[K, V]] {
+  def map[K, V](of: Avro[V])(mapKey: String => Either[Throwable, K])(contramapKey: K => String): Avro[Map[K, V]] = new Avro[Map[K, V]] {
     override def apply[F[_] : AvroAlgebra]: F[Map[K, V]] = implicitly[AvroAlgebra[F]].map(of.apply[F])(mapKey)(contramapKey)
   }
 
@@ -107,9 +108,9 @@ trait AvroDsl extends AvroDslRecordN { self =>
 
   implicit class RichAvro[A](val fa: Avro[A]) {
     def imap[B](f: A => B)(g: B => A): Avro[B] = self.imap(fa)(f)(g)
-    def pmap[B](f: A => Attempt[B])(g: B => A): Avro[B] = self.pmap(fa)(f)(g)
+    def pmap[B](f: A => Either[Throwable, B])(g: B => A): Avro[B] = self.pmap(fa)(f)(g)
     def discriminator(v: A): Avro[A] =
-      pmap(a => if(v == a) Attempt.success(v) else Attempt.error(s"Value '$a' didn't equal static('$v')"))(identity)
+      pmap(a => if(v == a) Right(v) else Left(new Throwable(s"Value '$a' didn't equal static('$v')")))(identity)
     def |[B](fb: Avro[B]): UnionBuilder[A :+: B :+: CNil] =
       new UnionBuilder[CNil](cnil).add(fb).add(fa)
   }

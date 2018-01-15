@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 
 import cats._
 import cats.implicits._
-import formulation.{Attempt, Avro, AvroDecoder, AvroEncoder, AvroSchema, AvroSchemaCompatibility}
+import formulation.{Avro, AvroDecoder, AvroEncoder, AvroSchema, AvroSchemaCompatibility}
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import org.apache.avro.io.EncoderFactory
@@ -71,7 +71,7 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
     * @tparam A The entity we want to decode to
     * @return Attempt[A], which might be a error or a success case
     */
-  def decode[A: AvroSchema : AvroDecoder](bytes: Array[Byte]): F[Attempt[A]] = {
+  def decode[A: AvroSchema : AvroDecoder](bytes: Array[Byte]): F[Either[Throwable, A]] = {
     val bb = ByteBuffer.wrap(bytes)
 
     for {
@@ -81,7 +81,7 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
       schema <- client.getSchemaById(identifier)
       entity <- schema match {
         case Some(s) => M.pure(formulation.decode[A](bb.getByteArray(5), writerSchema = Some(s)))
-        case None => M.raiseError[Attempt[A]](new Throwable(s"There was no schema in the registry for identifier $identifier"))
+        case None => M.raiseError(new Throwable(s"There was no schema in the registry for identifier $identifier"))
       }
     } yield entity
   }

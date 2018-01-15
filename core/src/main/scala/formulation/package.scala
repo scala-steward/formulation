@@ -32,7 +32,7 @@ package object formulation extends AvroDsl {
   }
 
   def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)
-               (implicit R: AvroDecoder[A], S: AvroSchema[A]): Attempt[A] = {
+               (implicit R: AvroDecoder[A], S: AvroSchema[A]): Either[Throwable, A] = {
 
     val in = new ByteArrayInputStream(bytes)
 
@@ -47,7 +47,7 @@ package object formulation extends AvroDsl {
       R.decode(rSchema, record)
     }
     catch {
-      case NonFatal(ex) => Attempt.exception(DecodeError(ex))
+      case NonFatal(ex) => Left(ex)
     }
     finally {
       in.close()

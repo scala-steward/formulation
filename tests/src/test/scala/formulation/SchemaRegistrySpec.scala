@@ -29,13 +29,13 @@ class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks wit
 
     "encode/decode into symmetrical results with unions" in {
       forAll { (event: Event) =>
-        (sr.encode(event) >>= sr.decode[Event]).runA(registryState()).value.value shouldBe Right(Attempt.success(event))
+        (sr.encode(event) >>= sr.decode[Event]).runA(registryState()).value.value shouldBe Right(Right(event))
       }
     }
 
     "encode/decode into symmetrical results with records" in {
       forAll { (user: UserV1) =>
-        (sr.encode(user) >>= sr.decode[UserV1]).runA(registryState(List(SchemaEntry(1, "user.User", schema[UserV1])))).value.value shouldBe Right(Attempt.success(user))
+        (sr.encode(user) >>= sr.decode[UserV1]).runA(registryState(List(SchemaEntry(1, "user.User", schema[UserV1])))).value.value shouldBe Right(Right(user))
       }
     }
 
@@ -56,7 +56,7 @@ class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks wit
           SchemaEntry(2, "user.User", schema[UserV2])
         )
 
-        prg.runA(registryState(schemaEntries)).value.value shouldBe Right(Attempt.success(asUserV1))
+        prg.runA(registryState(schemaEntries)).value.value shouldBe Right(Right(asUserV1))
       }
     }
 

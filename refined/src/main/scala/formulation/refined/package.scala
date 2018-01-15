@@ -6,6 +6,6 @@ package object refined {
 
   implicit class RichAvroRefined[T](val avro: Avro[T]) {
     def refine[P](implicit V: Validate[T, P], R: RefType[Refined]): Avro[Refined[T, P]] =
-      avro.pmap[Refined[T, P]](p => Attempt.fromEither(R.refine(p).left.map(err => new Throwable(err))))(R.unwrap)
+      avro.pmap[Refined[T, P]](p => R.refine(p).left.map(err => new Throwable(err)))(R.unwrap)
   }
 }

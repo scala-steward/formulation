@@ -19,7 +19,7 @@ class SchemaSpec extends WordSpec with Matchers  {
     "generate for Set[Int]" in { schema(set(int)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"array","items":"int"}}]}"""}
     "generate for Vector[Int]" in { schema(vector(int)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"array","items":"int"}}]}"""}
     "generate for Seq[Int]" in { schema(seq(int)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"array","items":"int"}}]}"""}
-    "generate for Map[String, Int]" in { schema(map(int)(Attempt.success)(identity)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"map","values":"int"}}]}"""}
+    "generate for Map[String, Int]" in { schema(map(int)(Right.apply)(identity)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"map","values":"int"}}]}"""}
     "generate for ADT" in { schema(BookingProcess.codec) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":[{"type":"record","name":"Cancelled","doc":"","fields":[{"name":"disc","type":"int"}]},{"type":"record","name":"DateSelected","doc":"","fields":[{"name":"disc","type":"int"},{"name":"datetime","type":"string"}]},{"type":"record","name":"NotStarted","doc":"","fields":[{"name":"disc","type":"int"}]},"null"]}]}"""}
 
     def schema[A](avroPart: Avro[A]): String =

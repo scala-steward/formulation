@@ -1,11 +1,8 @@
 package formulation
 
 import java.time.{Instant, LocalDate, LocalDateTime, ZonedDateTime}
-import java.util
 import java.util.UUID
 
-import cats.Eq
-import cats.implicits._
 import org.scalatest._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -72,7 +69,7 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
     }
     "work with Map" in {
       forAll(mapGen) { (a: Map[String, Int]) =>
-        assert(a, map(int)(Attempt.success)(identity))
+        assert(a, map(int)(Right.apply)(identity))
       }
     }
 
@@ -82,33 +79,27 @@ class CodecSpec extends WordSpec with Matchers with GeneratorDrivenPropertyCheck
       }
     }
 
-    "work with ADT" in {
+    "work with ADT with discriminator" in {
       forAll { (a: BookingProcess) =>
         assert(a, BookingProcess.codec)
       }
     }
+    "work with ADT without discriminator" in {
+      forAll { (a: Fault) =>
+        assert(a, Fault.codec)
+      }
+    }
   }
 
-  def assert[A](entity: A, avroPart: Avro[A])(implicit E: Eq[A]): Boolean = {
+  def assert[A](entity: A, avroPart: Avro[A]): Boolean = {
 
     implicit def codec: Avro[Generic[A]] = Generic.codec(avroPart)
 
     val record = Generic(entity)
 
-    val eqGeneric = Eq.instance[Attempt[Generic[A]]] {
-      case (Attempt.Success(left), Attempt.Success(right)) => E.eqv(left.value, right.value)
-      case _ => false
-    }
+    val result = decode[Generic[A]](encode(record))
+    val expected = Right(record)
 
-    eqGeneric.eqv(decode[Generic[A]](encode(record)), Attempt.success(record))
+    result == expected
   }
-
-  implicit val eqUserId: Eq[UserId] = Eq.fromUniversalEquals[UserId]
-  implicit val eqBookingProcess: Eq[BookingProcess] = Eq.fromUniversalEquals[BookingProcess]
-  implicit val eqLocalDate: Eq[LocalDate] = Eq.fromUniversalEquals[LocalDate]
-  implicit val eqLocalDateTime: Eq[LocalDateTime] = Eq.fromUniversalEquals[LocalDateTime]
-  implicit val eqArrayByte: Eq[Array[Byte]] = Eq.instance[Array[Byte]]((x, y) => util.Arrays.equals(x, y))
-  implicit def eqSeq[A](implicit E: Eq[A]): Eq[Seq[A]] = Eq.instance[Seq[A]] { case (x, y) => (x zip y).forall(l => E.eqv(l._1, l._2)) }
-  implicit val eqInstant: Eq[Instant] = Eq.instance(_.toEpochMilli == _.toEpochMilli)
-  implicit val eqZonedDateTime: Eq[ZonedDateTime] =  Eq.fromUniversalEquals[ZonedDateTime]
 }

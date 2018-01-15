@@ -36,6 +36,21 @@ trait ArbitraryHelpers {
     )
   }
 
+  implicit val faultArb: Arbitrary[Fault] = Arbitrary {
+    def error = for {
+      id <- Gen.choose(0, Int.MaxValue)
+      message <- Gen.alphaStr
+    } yield Fault.Error(id, message)
+
+    def failure = for {
+      id <- Gen.choose(0, Int.MaxValue)
+      message <- Gen.mapOf(Gen.alphaStr.flatMap(a => Gen.alphaStr.map(b => a -> b)))
+      recoverable <- Gen.oneOf(true, false)
+    } yield Fault.Failure(id, message, recoverable)
+
+    Gen.oneOf(error, failure)
+  }
+
   implicit val eventArb: Arbitrary[Event] = Arbitrary {
     def completed = instantArb.arbitrary.map(Event.Completed)
     def started = instantArb.arbitrary.map(Event.Started)

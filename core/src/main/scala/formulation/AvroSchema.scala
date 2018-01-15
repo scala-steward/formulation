@@ -52,7 +52,7 @@ object AvroSchema {
 
     override def list[A](of: AvroSchema[A]): AvroSchema[List[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def pmap[A, B](fa: AvroSchema[A])(f: A => Attempt[B])(g: B => A): AvroSchema[B] = by(fa)(g)
+    override def pmap[A, B](fa: AvroSchema[A])(f: A => Either[Throwable, B])(g: B => A): AvroSchema[B] = by(fa)(g)
 
     override def set[A](of: AvroSchema[A]): AvroSchema[Set[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
@@ -60,7 +60,7 @@ object AvroSchema {
 
     override def seq[A](of: AvroSchema[A]): AvroSchema[Seq[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def map[K, V](value: AvroSchema[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
+    override def map[K, V](value: AvroSchema[V])(mapKey: String => Either[Throwable, K])(contramapKey: K => String): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
 
     override def or[A, B](fa: AvroSchema[A], fb: AvroSchema[B]): AvroSchema[Either[A, B]] = {
       import scala.util.{Failure, Success, Try}

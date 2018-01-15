@@ -89,8 +89,8 @@ class DefaultSchemaSpec extends WordSpec with Matchers with GeneratorDrivenPrope
 
     "generate defaults for Map[String, Int]" in {
       forAll(mapGen) { v =>
-        schema(map(int)(Attempt.success)(identity), v) shouldBe
-          genericRecordSchema("""{"type":"map","values":"int"}""", prettyPrint(v, map(int)(Attempt.success)(identity)))
+        schema(map(int)(Right.apply)(identity), v) shouldBe
+          genericRecordSchema("""{"type":"map","values":"int"}""", prettyPrint(v, map(int)(Right.apply)(identity)))
       }
     }
     "generate defaults for ADT" in {

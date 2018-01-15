@@ -155,7 +155,7 @@ object Boilerplate {
       import tv._
 
       val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroDecoder, $tpe, Z])"} mkString ", "
-      val applies = synTypes map { tpe => s"${tpe.toLowerCase} <- param$tpe._2.typeClass.decode(s.getField(param$tpe._1).schema, r.get(param$tpe._1))"} mkString "; "
+      val applies = synTypes map { tpe => s"${tpe.toLowerCase} <- decodeField(s, r, param$tpe._1, param$tpe._2.typeClass)"} mkString "; "
 
       block"""
         |package formulation
@@ -163,9 +163,17 @@ object Boilerplate {
         |import org.apache.avro.generic.GenericRecord
         |import org.apache.avro.Schema
         |
+        |import cats.implicits._
+        |
         |trait AvroDecoderRecordN { self: AvroAlgebra[AvroDecoder] =>
-        |  private def record[A](namespace: String, name: String)(f: (Schema, GenericRecord) => Attempt[A]) =
+        |  private def record[A](namespace: String, name: String)(f: (Schema, GenericRecord) => Either[Throwable, A]) =
         |   AvroDecoder.partialWithSchema { case (s, record: GenericRecord) if s.getType == Schema.Type.RECORD && record.getSchema.getFullName == namespace + "." + name => f(s, record) }
+        |
+        |  private def getSchemaForField(schema: Schema, field: String): Either[Throwable, Schema] =
+        |    Either.fromOption(Option(schema.getField(field)).map(_.schema()), SchemaDoesNotHaveField(field, schema))
+        |
+        |  private def decodeField[A](schema: Schema, record: GenericRecord, field: String, decoder: AvroDecoder[A]): Either[Throwable, A] =
+        |    getSchemaForField(schema, field).flatMap(s => decoder.decode(s, record.get(field)))
         |
         -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = record(namespace, name) { case (s,r) => for { $applies } yield f(${`a..n`}) }
         |}
