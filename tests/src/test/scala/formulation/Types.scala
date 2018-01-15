@@ -59,14 +59,14 @@ object Fault {
   case class Failure(id: Int, message: Map[String, String], recoverable: Boolean) extends Fault
 
   implicit val error: Avro[Error] = record2("fault", "Error")(Error.apply)(
-    "id" -> member(int, _.id),
+    "id" -> member(int, _.id, aliases = Seq("identifier", "errorId")),
     "message" -> member(string, _.message)
   )
 
   implicit val failure: Avro[Failure] = record3("fault", "Failure")(Failure.apply)(
     "id" -> member(int, _.id),
     "message" -> member(map(string)(Right.apply)(identity), _.message),
-    "recoverable" -> member(bool, _.recoverable)
+    "recoverable" -> member(bool, _.recoverable, documentation = Some("States if we can retry the action"))
   )
 
   implicit val codec: Avro[Fault] = (error | failure).as[Fault]

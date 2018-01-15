@@ -65,8 +65,10 @@ case class UserV2(
 
 object UserV2 {
   implicit val codec: Avro[UserV2] = record8("user", "User")(UserV2.apply)(
-    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId),
-    "username" -> member(string, _.username),
+    //compatibility spec: we added aliases
+    "userId" -> member(int.imap(UserId.apply)(_.id), _.userId, aliases = Seq("id")),
+    //compatibility spec: we added documentation, due to canonical parsing this should not break compatibility
+    "username" -> member(string, _.username, documentation = Some("The username of the user")),
     "email" -> member(string, _.email),
     "password" -> member(string, _.password),
     "age" -> member(option(int), _.age, Some(None)),

@@ -131,7 +131,7 @@ object Boilerplate {
       import tv._
 
       val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroSchema, $tpe, Z])"} mkString ", "
-      val applies = synTypes map { tpe => s"new Field(param$tpe._1, param$tpe._2.typeClass.generateSchema, null, param$tpe._2.defaultValue.getOrElse(null))"} mkString ", "
+      val applies = synTypes map { tpe => s"field(param$tpe._1, param$tpe._2)"} mkString ", "
       block"""
         |package formulation
         |
@@ -141,6 +141,12 @@ object Boilerplate {
         |import scala.collection.JavaConverters._
         |
         |trait AvroSchemaRecordN { self: AvroAlgebra[AvroSchema] =>
+        |  private def field[A, B](name: String, member: Member[AvroSchema, A, B]): Schema.Field = {
+        |    val field = new Schema.Field(name, member.typeClass.generateSchema, member.documentation.orNull, member.defaultValue.orNull)
+        |    member.aliases.foreach(alias => field.addAlias(alias))
+        |    field
+        |  }
+        |
         -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroSchema[Z] = AvroSchema.create(Schema.createRecord(name, "", namespace, false, List($applies).asJava))
         |}
         |

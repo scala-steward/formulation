@@ -8,8 +8,21 @@ import scala.util.control.NonFatal
 
 package object formulation extends AvroDsl {
 
-  def member[A, B](avro: Avro[A], getter: B => A, defaultValue: Option[A] = None): Member[Avro, A, B] =
-    Member[Avro, A, B](avro, getter, defaultValue.map(v => avro.apply[AvroDefaultValuePrinter].print(v)))
+  /**
+    * Constructs a member for a record
+    *
+    * @param avro One of the combinators of `Avro[A]`, see primitives supported
+    * @param getter A function which gives access to the the field in the case class
+    * @param defaultValue The default value, use this if you want to introduce new fields and maintain compatibility
+    * @param documentation Documentation for this member, it doesn't break compatibility (https://avro.apache.org/docs/1.8.1/spec.html#Parsing+Canonical+Form+for+Schemas)
+    * @param aliases Aliases for this member, it doesn't break compatibility (https://avro.apache.org/docs/1.8.1/spec.html#Parsing+Canonical+Form+for+Schemas)
+    * @tparam A The member type of the record
+    * @tparam B The type of the record it self
+    *
+    * @return A fully constructed `Member[Avro, A, B]`
+    */
+  def member[A, B](avro: Avro[A], getter: B => A, defaultValue: Option[A] = None, documentation: Option[String] = None, aliases: Seq[String] = Seq.empty): Member[Avro, A, B] =
+    Member[Avro, A, B](avro, getter, aliases, defaultValue.map(avro.apply[AvroDefaultValuePrinter].print), documentation)
 
   def encode[A](value: A)(implicit R: AvroEncoder[A], S: AvroSchema[A]): Array[Byte] = {
     val os = new ByteArrayOutputStream()

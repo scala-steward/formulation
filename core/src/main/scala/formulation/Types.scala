@@ -6,7 +6,13 @@ import org.codehaus.jackson.JsonNode
 import shapeless.ops.coproduct.Align
 import shapeless.{Coproduct, Generic}
 
-final case class Member[F[_], A, B] (typeClass: F[A], getter: B => A, defaultValue: Option[JsonNode] = None) {
+final case class Member[F[_], A, B] private (
+    typeClass: F[A],
+    getter: B => A,
+    aliases: Seq[String] = Seq.empty,
+    defaultValue: Option[JsonNode] = None,
+    documentation: Option[String] = None
+) {
   def mapTypeClass[G[_]](f: F ~> G): Member[G, A, B] = copy(typeClass = f(typeClass))
 }
 
