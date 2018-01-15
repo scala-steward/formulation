@@ -52,11 +52,13 @@ trait AvroDsl extends AvroDslRecordN { self =>
     override def apply[F[_] : AvroAlgebra]: F[BigDecimal] = implicitly[AvroAlgebra[F]].bigDecimal(scale, precision)
   }
 
-  val uuid: Avro[UUID] =
-    string.pmap(str => Either.fromTry(Try(UUID.fromString(str))))(_.toString)
+  val uuid: Avro[UUID] = new Avro[UUID] {
+    override def apply[F[_] : AvroAlgebra]: F[UUID] = implicitly[AvroAlgebra[F]].uuid
+  }
 
-  val instant: Avro[Instant] =
-    long.pmap(ts => Either.fromTry(Try(Instant.ofEpochMilli(ts))))(_.toEpochMilli)
+  val instant: Avro[Instant] = new Avro[Instant] {
+    override def apply[F[_] : AvroAlgebra]: F[Instant] = implicitly[AvroAlgebra[F]].instant
+  }
 
   val localDate: Avro[LocalDate] =
     string.pmap(str => Either.fromTry(Try(LocalDate.parse(str))))(_.format(DateTimeFormatter.ISO_LOCAL_DATE))

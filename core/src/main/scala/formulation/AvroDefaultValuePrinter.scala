@@ -1,6 +1,8 @@
 package formulation
 
 import java.nio.charset.Charset
+import java.time.Instant
+import java.util.UUID
 
 import org.apache.avro.{Conversions, LogicalTypes}
 import org.codehaus.jackson.JsonNode
@@ -45,6 +47,10 @@ object AvroDefaultValuePrinter {
     override val long: AvroDefaultValuePrinter[Long] = create(new LongNode(_))
 
     override val cnil: AvroDefaultValuePrinter[CNil] = create(_ => NullNode.instance)
+
+    override val uuid: AvroDefaultValuePrinter[UUID] = by(string)(_.toString)
+
+    override val instant: AvroDefaultValuePrinter[Instant] = by(long)(_.toEpochMilli)
 
     override def option[A](from: AvroDefaultValuePrinter[A]): AvroDefaultValuePrinter[Option[A]] = create {
       case Some(v) => from.print(v)

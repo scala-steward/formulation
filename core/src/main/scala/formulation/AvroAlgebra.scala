@@ -1,5 +1,8 @@
 package formulation
 
+import java.time.Instant
+import java.util.UUID
+
 import shapeless.CNil
 
 trait AvroAlgebra[F[_]] extends AvroAlgebraRecordN[F] {
@@ -12,6 +15,9 @@ trait AvroAlgebra[F[_]] extends AvroAlgebraRecordN[F] {
   val double: F[Double]
   val long: F[Long]
   val cnil: F[CNil]
+
+  val uuid: F[UUID]
+  val instant: F[Instant]
 
   def option[A](from: F[A]): F[Option[A]]
   def list[A](of: F[A]): F[List[A]]

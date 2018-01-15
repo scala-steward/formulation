@@ -13,6 +13,8 @@ class SchemaSpec extends WordSpec with Matchers  {
     "generate for BigDecimal" in { schemaString(bigDecimal(300, 300)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"bytes","logicalType":"decimal","precision":300,"scale":300}}]}"""}
     "generate for Array[Byte]" in { schemaString(byteArray) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":"bytes"}]}"""}
     "generate for Long" in { schemaString(long) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":"long"}]}"""}
+    "generate for UUID" in { schemaString(uuid) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"string","logicalType":"uuid"}}]}"""}
+    "generate for Instant" in { schemaString(instant) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"long","logicalType":"timestamp-millis"}}]}"""}
     "generate for CNil" in { schemaString(cnil) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":"null"}]}"""}
     "generate for Option[Int]" in { schemaString(option(int)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":["null","int"]}]}"""}
     "generate for List[Int]" in { schemaString(list(int)) shouldBe """{"type":"record","name":"Generic","namespace":"formulation","doc":"","fields":[{"name":"value","type":{"type":"array","items":"int"}}]}"""}

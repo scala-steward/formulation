@@ -1,6 +1,8 @@
 package formulation
 
 import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
 import shapeless.CNil
@@ -51,6 +53,10 @@ object AvroEncoder {
     override val long: AvroEncoder[Long] = identity
 
     override val cnil: AvroEncoder[CNil] = AvroEncoder.create((s, v) => s -> null)
+
+    override val uuid: AvroEncoder[UUID] = by(string)(_.toString)
+    
+    override val instant: AvroEncoder[Instant] = by(long)(_.toEpochMilli)
 
     override def bigDecimal(scale: Int, precision: Int): AvroEncoder[BigDecimal] = AvroEncoder.create { case (s, v: BigDecimal) =>
       val decimalType = LogicalTypes.decimal(precision, scale)

@@ -1,5 +1,8 @@
 package formulation
 
+import java.time.Instant
+import java.util.UUID
+
 import org.apache.avro.{LogicalTypes, Schema}
 import shapeless.CNil
 
@@ -39,6 +42,18 @@ object AvroSchema {
     override val long: AvroSchema[Long] = AvroSchema.create(Schema.create(Schema.Type.LONG))
 
     override val cnil: AvroSchema[CNil] = AvroSchema.create(Schema.create(Schema.Type.NULL))
+
+    override val uuid: AvroSchema[UUID] = {
+      val schema = Schema.create(Schema.Type.STRING)
+      LogicalTypes.uuid().addToSchema(schema)
+      AvroSchema.create(schema)
+    }
+
+    override val instant: AvroSchema[Instant] = {
+      val schema = Schema.create(Schema.Type.LONG)
+      LogicalTypes.timestampMillis().addToSchema(schema)
+      AvroSchema.create(schema)
+    }
 
     override def bigDecimal(scale: Int, precision: Int): AvroSchema[BigDecimal] = {
       val schema = Schema.create(Schema.Type.BYTES)

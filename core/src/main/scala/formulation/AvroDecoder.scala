@@ -1,6 +1,8 @@
 package formulation
 
 import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 
 import cats.Semigroupal
 import org.apache.avro.{Conversions, LogicalTypes, Schema}
@@ -17,6 +19,10 @@ sealed trait AvroDecoder[A] { self =>
 
   def map[B](f: A => B): AvroDecoder[B] = new AvroDecoder[B] {
     override def decode(schema: Schema, data: Any): Either[Throwable, B] = self.decode(schema, data).map(f)
+  }
+
+  def andThen[B](f: A => Either[Throwable, B]): AvroDecoder[B] = new AvroDecoder[B] {
+    override def decode(schema: Schema, data: Any): Either[Throwable, B] = self.decode(schema, data).flatMap(f)
   }
 }
 
@@ -47,6 +53,10 @@ object AvroDecoder {
     override val double: AvroDecoder[Double] = partial { case v: Double => Right(v) }
     override val long: AvroDecoder[Long] = partial { case v: Long => Right(v) }
     override val cnil: AvroDecoder[CNil] = fail("Unable to decode cnil")
+
+    override val uuid: AvroDecoder[UUID] = string.andThen(str => Either.fromTry(Try(UUID.fromString(str))))
+
+    override val instant: AvroDecoder[Instant] = long.andThen(ts => Either.fromTry(Try(Instant.ofEpochMilli(ts))))
 
     override def bigDecimal(scale: Int, precision: Int): AvroDecoder[BigDecimal] = partial[BigDecimal] { case v: ByteBuffer =>
 
