@@ -75,14 +75,14 @@ object AvroEncoder {
       AvroEncoder.create((schema, v) => fa.encode(schema, g(v)))
 
     override def option[A](from: AvroEncoder[A]): AvroEncoder[Option[A]] = AvroEncoder.create {
-      case (schema, Some(value)) => from.encode(schema, value)
+      case (schema, Some(value)) => from.encode(schema.getTypes.asScala.find(_.getType != Schema.Type.NULL).orNull, value)
       case (schema, None) => schema -> null
     }
 
     override def list[A](of: AvroEncoder[A]): AvroEncoder[List[A]] =
       AvroEncoder.create((schema, list) => schema -> list.map(of.encode(schema.getElementType, _)._2).asJava)
 
-    override def pmap[A, B](fa: AvroEncoder[A])(f: A => Either[Throwable, B])(g: B => A): AvroEncoder[B] =
+    override def pmap[A, B](fa: AvroEncoder[A])(f: A => Attempt[B])(g: B => A): AvroEncoder[B] =
       AvroEncoder.create((schema, b) => fa.encode(schema, g(b)))
 
     override def set[A](of: AvroEncoder[A]): AvroEncoder[Set[A]] = by(list(of))(_.toList)
@@ -91,15 +91,15 @@ object AvroEncoder {
 
     override def seq[A](of: AvroEncoder[A]): AvroEncoder[Seq[A]] = by(list(of))(_.toList)
 
-    override def map[K, V](of: AvroEncoder[V])(mapKey: String => Either[Throwable, K])(contramapKey: K => String): AvroEncoder[Map[K, V]] =
+    override def map[K, V](of: AvroEncoder[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroEncoder[Map[K, V]] =
       AvroEncoder.create((schema, mm) => schema -> mm.map { case (k, v) => contramapKey(k) -> of.encode(schema.getValueType, v)._2 }.asJava)
 
     override def or[A, B](fa: AvroEncoder[A], fb: AvroEncoder[B]): AvroEncoder[Either[A, B]] =
       AvroEncoder.create { case (schema, value) =>
 
         def encode[Z](encoder: AvroEncoder[Z], value: Z) = encoder.name match {
-          case Some(fqdn) =>
-            val idx = schema.getIndexNamed(s"${fqdn.namespace}.${fqdn.name}")
+          case Some(n) =>
+            val idx = schema.getIndexNamed(s"${n.namespace}.${n.name}")
             val types = schema.getTypes.asScala
 
             encoder.encode(types(idx), value)

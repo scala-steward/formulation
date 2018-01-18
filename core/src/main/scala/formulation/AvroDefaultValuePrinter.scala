@@ -70,11 +70,11 @@ object AvroDefaultValuePrinter {
 
     override def seq[A](of: AvroDefaultValuePrinter[A]): AvroDefaultValuePrinter[Seq[A]] = by(list(of))(_.toList)
     
-    override def map[K, V](value: AvroDefaultValuePrinter[V])(mapKey: String => Either[Throwable, K])(contramapKey: K => String): AvroDefaultValuePrinter[Map[K, V]] = create { mm =>
+    override def map[K, V](value: AvroDefaultValuePrinter[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroDefaultValuePrinter[Map[K, V]] = create { mm =>
       new ObjectNode(JsonNodeFactory.instance).putAll(mm.map { case (k, v) => contramapKey(k).trim -> value.print(v) }.asJava)
     }
 
-    override def pmap[A, B](fa: AvroDefaultValuePrinter[A])(f: A => Either[Throwable, B])(g: B => A): AvroDefaultValuePrinter[B] = by(fa)(g)
+    override def pmap[A, B](fa: AvroDefaultValuePrinter[A])(f: A => Attempt[B])(g: B => A): AvroDefaultValuePrinter[B] = by(fa)(g)
 
     override def imap[A, B](fa: AvroDefaultValuePrinter[A])(f: A => B)(g: B => A): AvroDefaultValuePrinter[B] = by(fa)(g)
 

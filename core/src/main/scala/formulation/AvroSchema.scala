@@ -14,7 +14,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(msg = "AvroSchema[${A}] not found, did you implicitly define Avro[${A}]?")
 trait AvroSchema[A] {
-  def generateSchema: Schema
+  val generateSchema: Schema
 }
 
 object AvroSchema {
@@ -22,11 +22,11 @@ object AvroSchema {
   import scala.collection.JavaConverters._
 
   def create[A](schema: Schema): AvroSchema[A] = new AvroSchema[A] {
-    override def generateSchema: Schema = schema
+    override val generateSchema: Schema = schema
   }
 
   def by[A, B](fa: AvroSchema[A])(f: B => A): AvroSchema[B] = new AvroSchema[B] {
-    override def generateSchema: Schema = fa.generateSchema
+    override val generateSchema: Schema = fa.generateSchema
   }
 
   implicit val interpreter: AvroAlgebra[AvroSchema] = new AvroAlgebra[AvroSchema] with AvroSchemaRecordN {
@@ -71,7 +71,7 @@ object AvroSchema {
 
     override def list[A](of: AvroSchema[A]): AvroSchema[List[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def pmap[A, B](fa: AvroSchema[A])(f: A => Either[Throwable, B])(g: B => A): AvroSchema[B] = by(fa)(g)
+    override def pmap[A, B](fa: AvroSchema[A])(f: A => Attempt[B])(g: B => A): AvroSchema[B] = by(fa)(g)
 
     override def set[A](of: AvroSchema[A]): AvroSchema[Set[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
@@ -79,7 +79,7 @@ object AvroSchema {
 
     override def seq[A](of: AvroSchema[A]): AvroSchema[Seq[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
 
-    override def map[K, V](value: AvroSchema[V])(mapKey: String => Either[Throwable, K])(contramapKey: K => String): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
+    override def map[K, V](value: AvroSchema[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
 
     override def or[A, B](fa: AvroSchema[A], fb: AvroSchema[B]): AvroSchema[Either[A, B]] = {
       import scala.util.{Failure, Success, Try}
@@ -91,7 +91,7 @@ object AvroSchema {
       // if they are, we just merge them into the union we're creating
 
       def schemasOf(schema: Schema): Seq[Schema] = Try(schema.getTypes /* throws an error if we're not a union */) match {
-        case Success(subschemas) => subschemas.asScala
+        case Success(s) => s.asScala
         case Failure(_) => Seq(schema)
       }
 

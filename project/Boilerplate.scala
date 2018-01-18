@@ -136,11 +136,11 @@ object Boilerplate {
         |package formulation
         |
         |import org.apache.avro.Schema
-        |import org.apache.avro.Schema.Field
         |
         |import scala.collection.JavaConverters._
         |
         |trait AvroSchemaRecordN { self: AvroAlgebra[AvroSchema] =>
+        |
         |  private def field[A, B](name: String, member: Member[AvroSchema, A, B]): Schema.Field = {
         |    val field = new Schema.Field(name, member.typeClass.generateSchema, member.documentation.orNull, member.defaultValue.orNull)
         |    member.aliases.foreach(alias => field.addAlias(alias))
@@ -161,7 +161,9 @@ object Boilerplate {
       import tv._
 
       val params = synTypes map { tpe => s"param$tpe: (String, Member[AvroDecoder, $tpe, Z])"} mkString ", "
-      val applies = synTypes map { tpe => s"${tpe.toLowerCase} <- decodeField(s, r, param$tpe._1, param$tpe._2.typeClass)"} mkString "; "
+      val applies = synTypes map { tpe => s"decodeField(p, s, r, param$tpe._1, param$tpe._2.typeClass)"} mkString ", "
+
+      def mapper = if(arity == 1) s"($applies).map(f)" else s"Semigroupal.map$arity[Validated[List[AvroDecodeError], ?], ${`A..N`}, Z]($applies)(f)"
 
       block"""
         |package formulation
@@ -169,19 +171,18 @@ object Boilerplate {
         |import org.apache.avro.generic.GenericRecord
         |import org.apache.avro.Schema
         |
+        |import cats.data.Validated
+        |import cats.Semigroupal
         |import cats.implicits._
         |
         |trait AvroDecoderRecordN { self: AvroAlgebra[AvroDecoder] =>
-        |  private def record[A](namespace: String, name: String)(f: (Schema, GenericRecord) => Either[Throwable, A]) =
-        |   AvroDecoder.partialWithSchema { case (s, record: GenericRecord) if s.getType == Schema.Type.RECORD && record.getSchema.getFullName == namespace + "." + name => f(s, record) }
+        |  private def getSchemaForField(p: JsonPointer, schema: Schema, field: String): Validated[List[AvroDecodeError], Schema] =
+        |    Validated.fromOption(Option(schema.getField(field)).map(_.schema()), AvroDecodeError.SchemaDoesNotHaveField(p, field, schema) :: Nil)
         |
-        |  private def getSchemaForField(schema: Schema, field: String): Either[Throwable, Schema] =
-        |    Either.fromOption(Option(schema.getField(field)).map(_.schema()), SchemaDoesNotHaveField(field, schema))
+        |  private def decodeField[A](p: JsonPointer, schema: Schema, record: GenericRecord, field: String, decoder: AvroDecoder[A]): Validated[List[AvroDecodeError], A] =
+        |    getSchemaForField(p, schema, field).andThen(s => decoder.decode(p.member(field), s, record.get(field)))
         |
-        |  private def decodeField[A](schema: Schema, record: GenericRecord, field: String, decoder: AvroDecoder[A]): Either[Throwable, A] =
-        |    getSchemaForField(schema, field).flatMap(s => decoder.decode(s, record.get(field)))
-        |
-        -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = record(namespace, name) { case (s,r) => for { $applies } yield f(${`a..n`}) }
+        -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDecoder[Z] = AvroDecoder.record(namespace, name) { case (p,s,r) => $mapper }
         |}
         |
       """

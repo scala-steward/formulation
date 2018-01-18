@@ -65,7 +65,7 @@ object Fault {
 
   implicit val failure: Avro[Failure] = record3("fault", "Failure")(Failure.apply)(
     "id" -> member(int, _.id),
-    "message" -> member(map(string)(Right.apply)(identity), _.message),
+    "message" -> member(map(string)(Attempt.success)(identity), _.message),
     "recoverable" -> member(bool, _.recoverable, documentation = Some("States if we can retry the action"))
   )
 

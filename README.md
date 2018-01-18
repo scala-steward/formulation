@@ -32,7 +32,7 @@ object Person {
   )
 }
 
-//encode to a Array[Byte], then decode which yields a `Either[Throwable, Person]`
+//encode to a Array[Byte], then decode which yields a `Either[AvroDecodeFailure, Person]`
 decode[Person](encode(Person("Mark", 1337))
 
 //will print the schema as JSON
@@ -41,7 +41,7 @@ schema[Person].toString
 
 ### Dependencies
 
-Current version: `0.3.0`
+Current version: `0.3.1`
 
 You need to add the bintray resolver
 
@@ -113,7 +113,7 @@ When there is a `Avro[A]` implicitly available we can summon a `AvroEncoder[A]` 
 The type signature of `decode` looks like this:
 
 ```
-def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)(implicit R: AvroDecoder[A], S: AvroSchema[A]): Either[Throwable, A]
+def decode[A](bytes: Array[Byte], writerSchema: Option[Schema] = None, readerSchema: Option[Schema] = None)(implicit R: AvroDecoder[A], S: AvroSchema[A]): Either[AvroDecodeFailure, A]
 ```
 
 You can provide a `writerSchema` in case you know the schema it's written with. If it's not supplied it will default to the `S: AvroSchema[A]`.
@@ -130,7 +130,7 @@ The signature of `imap` is:
 def imap[B](f: A => B)(g: B => A): Avro[B]
 ```
 
-While encoding we always have the function of `g: B => A`, while encoding we use `f: A => B` which maps the primitive type to a value class for example:
+While encoding we always have the function of `g: B => A`, while decoding we use `f: A => B` which maps the primitive type to a value class for example:
 
 ```scala
 case class UserId(id: Int)
@@ -151,12 +151,12 @@ Each combinator (e.g.: `int`) supports also has the `pmap` combinator which allo
 The signature of `pmap` is:
 
 ```
-def pmap[B](f: A => Either[Throwable, B])(g: B => A): Avro[B]
+def pmap[B](f: A => Attempt[B])(g: B => A): Avro[B]
 ```
 
-While encoding we always have the function of `g: B => A`, while decoding we have the function of `f: A => Either[Throwable, B]`.
+While encoding we always have the function of `g: B => A`, while decoding we have the function of `f: A => Attempt[B]`.
 
-The decoding might fail, therefore we return a `Either[Throwable, A]`. If you would like to support for example string based enumerations you can do it yourself:
+The decoding might fail, therefore we return a `Attempt[A]`. If you would like to support for example string based enumerations you can do it yourself:
 
 ```scala
 trait Enum[A] {
@@ -182,9 +182,17 @@ object Color {
 }
 
 def enum[A](implicit E: Enum[A]) =
-    string.pmap(str => E.allValues.find(x => E.asString(x) == str).fold[Either[Throwable, A]](Left(new Throwable(s"Value $str not found")))(Right.apply))(E.asString)
+    string.pmap(str => Attempt.fromOption(E.allValues.find(x => E.asString(x) == str), s"$str not found in the valid options list"))(E.asString)
 
 ```
+
+#### Attempt
+
+Attempt has two cases `Success`, `Exception` and `Error`. It has several combinators in it's companion object:
+
+- `Attempt.fromEither` - Convert a `Either[L, R]` to `Attempt[R]`
+- `Attempt.fromTry` - Convert a `Try[A]` to `Attempt[A]`
+- `Attempt.fromOption` - Convert a `Option[A]` to `Attempt[A]`
 
 ### Sum types
 

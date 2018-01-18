@@ -5,9 +5,9 @@ import eu.timepit.refined._
 import eu.timepit.refined.collection._
 import eu.timepit.refined.numeric.Positive
 import formulation.refined._
-import org.scalatest.{EitherValues, Matchers, WordSpec}
+import org.scalatest.{Inside, Matchers, WordSpec}
 
-class RefinedSpec extends WordSpec with Matchers with EitherValues {
+class RefinedSpec extends WordSpec with Matchers with Inside {
   "Refined" should {
     "be compatible" in {
       val schemaRefined = AvroSchema[PersonRefined].generateSchema
@@ -27,7 +27,11 @@ class RefinedSpec extends WordSpec with Matchers with EitherValues {
       val entity = PersonUnrefined("Mark", -1)
       val bytes = encode(entity)
 
-      decode[PersonRefined](bytes).left.value.getMessage shouldBe "Predicate failed: (-1 > 0)."
+      inside(decode[PersonRefined](bytes)) {
+        case Left(AvroDecodeFailure.Errors(_, AvroDecodeError.Error(p, err) :: Nil)) =>
+          p shouldBe JsonPointer().member("age")
+          err shouldBe "Predicate failed: (-1 > 0)."
+      }
     }
   }
 }
