@@ -4,6 +4,7 @@ formulation
 
 [![Build Status](https://api.travis-ci.org/vectos/formulation.svg)](https://travis-ci.org/vectos/formulation)
 [![codecov.io](http://codecov.io/github/vectos/formulation/coverage.svg?branch=master)](http://codecov.io/github/vectos/formulation?branch=master)
+[![latest version](https://index.scala-lang.org/vectos/formulation/formulation-core/latest.svg)](https://index.scala-lang.org/vectos/formulation)
 
 _formulation_ is a EDSL (embedded domain specific language) for describing Avro data types.
 
@@ -41,15 +42,13 @@ schema[Person].toString
 
 ### Dependencies
 
-Current version: `0.3.1`
-
 You need to add the bintray resolver
 
 ```
 resolvers += Resolver.bintrayRepo("fristi", "maven")
 ```
 
-Format module: `net.vectos" %% "formulation-$module" % "$version"` where $module (module below) and $version is current version. 
+Format module: `"net.vectos" %% "formulation-$module" % "$version"` where $module (module below) and $version is current version (see top). 
 
 | Module                            | Dependencies                  | Remark                                                                        |
 | ----------------------------------|-------------------------------|-------------------------------------------------------------------------------|
@@ -81,7 +80,7 @@ Format module: `net.vectos" %% "formulation-$module" % "$version"` where $module
 | `java.time.Instant`       | `instant`            | Uses `long` under the hood                                                    |
 | `java.time.LocalDate`     | `localDate`          | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE`)       |
 | `java.time.LocalDateTime` | `localDateTime`      | Uses `string` under the hood using (`DateTimeFormatter.ISO_LOCAL_DATE_TIME`)  |
-| `java.time.ZonedDateTime` | `zonedDateTime `     | Uses `string` under the hood `DateTimeFormat` (`yyyy-MM-dd'T'HH:mm:ssZ`)      |
+| `java.time.ZonedDateTime` | `zonedDateTime `     | Uses `string` under the hood using (`DateTimeFormatter.ISO_ZONED_DATE_TIME`)  |
 
 
 
