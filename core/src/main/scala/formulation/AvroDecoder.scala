@@ -33,7 +33,7 @@ sealed trait AvroDecoder[A] { self =>
 sealed trait AvroDecodeError
 
 object AvroDecodeError {
-  final case class NameMismatch(path: JsonPointer, expected: String, actual: String) extends AvroDecodeError
+  final case class NameMismatch(path: JsonPointer, expectedName: String, recordName: String, schemaName: String) extends AvroDecodeError
   final case class TypeMismatch(path: JsonPointer, actual: Any, schema: Schema) extends AvroDecodeError
   final case class Union(path: JsonPointer, errors: List[AvroDecodeError]) extends AvroDecodeError
   final case class Exception(path: JsonPointer, throwable: Throwable) extends AvroDecodeError
@@ -80,15 +80,14 @@ object AvroDecoder {
       f.applyOrElse((path, schema, data), (a: (JsonPointer, Schema, Any)) => Validated.invalid(List(AvroDecodeError.TypeMismatch(path, a._2, schema))))
   }
 
-
-
   def record[A](namespace: String, name: String)(f: (JsonPointer, Schema, GenericRecord) => Validated[List[AvroDecodeError], A]): AvroDecoder[A] = new AvroDecoder[A] {
     override def decode(path: JsonPointer, schema: Schema, data: Any): Validated[List[AvroDecodeError], A] = data match {
       case record: GenericRecord =>
-        if(schema == record.getSchema && record.getSchema.getFullName == namespace + "." + name) {
+        if(record.getSchema.getFullName == namespace + "." + name && schema.getFullName == namespace + "." + name) {
           f(path, schema, record)
         } else {
-          Validated.invalid(List(AvroDecodeError.NameMismatch(path, expected = schema.getFullName, actual = record.getSchema.getFullName)))
+          Validated.invalid(List(AvroDecodeError.NameMismatch(
+            path, expectedName = namespace + "." + name, schemaName = schema.getFullName, recordName = record.getSchema.getFullName)))
         }
       case _ =>
         Validated.invalid(List(AvroDecodeError.TypeMismatch(path, data, schema)))
