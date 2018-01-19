@@ -3,6 +3,7 @@ package formulation
 import cats.{Invariant, ~>}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
+import org.apache.avro.io.{BinaryDecoder, BinaryEncoder}
 import org.codehaus.jackson.JsonNode
 import shapeless.ops.coproduct.Align
 import shapeless.{Coproduct, Generic}
@@ -37,6 +38,10 @@ object Transformer {
 
 final case class RecordName(namespace: String, name: String)
 
+final case class AvroDecodeContext[A](entity: A, binaryDecoder: Option[BinaryDecoder])
+
+final case class AvroEncodeContext[A](entity: A, binaryEncoder: Option[BinaryEncoder])
+
 final case class AvroEncodeResult(usedSchema: Schema, payload: Array[Byte])
 
 sealed trait AvroDecodeFailure
@@ -44,6 +49,7 @@ sealed trait AvroDecodeFailure
 object AvroDecodeFailure {
   final case class Errors(record: GenericRecord, errors: List[AvroDecodeError]) extends AvroDecodeFailure
   final case class Exception(throwable: Throwable) extends AvroDecodeFailure
+  final case object Noop extends AvroDecodeFailure
 }
 
 sealed trait Attempt[+A] { self =>

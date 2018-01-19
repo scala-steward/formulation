@@ -33,17 +33,26 @@ val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-stt
   )
   .dependsOn(schemaRegistry)
 
+val akkaStreams = project.in(file("akka-streams"))
+  .settings(commonSettings("akka-streams"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-stream" % "2.5.9"
+    )
+  )
+  .dependsOn(core)
+
 val tests = project.in(file("tests"))
   .settings(noPublishSettings)
   .settings(commonSettings("tests"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
-      "org.scalatest" %% "scalatest" % "3.0.4" % Test
+      "org.scalatest" %% "scalatest" % "3.0.4" % Test,
+      "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.9" % Test
     )
   )
-  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp)
-
+  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, akkaStreams)
 
 val benchmark = project.in(file("benchmark"))
   .settings(noPublishSettings)
@@ -57,7 +66,7 @@ val benchmark = project.in(file("benchmark"))
       "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.0"
     )
   )
-  .dependsOn(core)
+  .dependsOn(core, akkaStreams)
   .enablePlugins(JmhPlugin)
 
 lazy val noPublishSettings = Seq(

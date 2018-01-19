@@ -3,15 +3,36 @@ package formulation.schemaregistry
 import java.nio.ByteBuffer
 
 import cats._
+import cats.data.Kleisli
 import cats.implicits._
-import formulation.{Avro, AvroDecodeFailure, AvroDecoder, AvroEncodeResult, AvroEncoder, AvroSchema, AvroSchemaCompatibility}
+import formulation.{Avro, AvroDecodeContext, AvroDecodeFailure, AvroDecoder, AvroEncodeContext, AvroEncodeResult, AvroEncoder, AvroSchema, AvroSchemaCompatibility}
 import org.apache.avro.Schema
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.util.control.NonFatal
 
 final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implicit M: MonadError[F, Throwable]) {
+
+  def kleisliEncode[A : AvroSchema : AvroEncoder]: Kleisli[F, AvroEncodeContext[A], AvroEncodeContext[Array[Byte]]] = {
+    def format(identifier: Int, payload: Array[Byte]): Array[Byte] = {
+      val byteBuffer = ByteBuffer.allocate(5)
+      byteBuffer.put(0.toByte)
+      byteBuffer.putInt(identifier)
+      byteBuffer.array() ++ payload
+    }
+
+    def confluentEnvelope = Kleisli[F, AvroEncodeContext[AvroEncodeResult], AvroEncodeContext[Array[Byte]]] { ctx =>
+      for {
+        identifier <- client.getIdBySchema(ctx.entity.usedSchema)
+        payload <- identifier match {
+          case Some(id) => M.pure(format(id, ctx.entity.payload))
+          case None => M.raiseError[Array[Byte]](new Throwable(s"There was no schema registered for ${ctx.entity.usedSchema.getFullName}"))
+        }
+      } yield AvroEncodeContext(payload, ctx.binaryEncoder)
+    }
+
+    formulation.kleisliEncode[F, A] andThen confluentEnvelope
+  }
 
   /**
     * Encodes the a entity according the confluent format: https://docs.confluent.io/current/schema-registry/docs/serializer-formatter.html (see wire format)
@@ -20,25 +41,28 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
     * @tparam A The entity we want to decode to
     * @return The payload as a array of bytes
     */
-  def encode[A: AvroSchema : AvroEncoder](value: A): F[Array[Byte]] = {
-    def format(identifier: Int, payload: Array[Byte]): Array[Byte] = {
-      val byteBuffer = ByteBuffer.allocate(5)
-      byteBuffer.put(0.toByte)
-      byteBuffer.putInt(identifier)
-      byteBuffer.array() ++ payload
+  def encode[A: AvroSchema : AvroEncoder](value: A): F[Array[Byte]] = M.map(kleisliEncode.run(AvroEncodeContext(value, None)))(_.entity)
+
+
+  def kleisliDecode[A: AvroSchema : AvroDecoder]: Kleisli[F, AvroDecodeContext[Array[Byte]], AvroDecodeContext[Either[AvroDecodeFailure, A]]] = {
+    def confluentEnvelope = Kleisli[F, AvroDecodeContext[Array[Byte]], AvroDecodeContext[(Schema, Array[Byte])]] { ctx =>
+      val bb = ByteBuffer.wrap(ctx.entity)
+      def prg: F[AvroDecodeContext[(Schema, Array[Byte])]] = for {
+        _ <- if (bb.get(0) == 0.toByte) M.pure(()) else M.raiseError(new Throwable("First byte was not the magic byte (0x0)"))
+        identifier = bb.getInt(1)
+        optSchema <- client.getSchemaById(identifier)
+        schema <- optSchema match {
+          case Some(s) => M.pure(s)
+          case None => M.raiseError[Schema](new Throwable(s"There was no schema in the registry for identifier $identifier"))
+        }
+      } yield AvroDecodeContext(schema -> bb.getByteArray(5), ctx.binaryDecoder)
+
+      prg
     }
 
-    def encodeRaw(): F[AvroEncodeResult] =
-      try { M.pure(formulation.encoded(value)) } catch { case NonFatal(ex) => M.raiseError(ex) }
-
-    for {
-      res <- encodeRaw()
-      identifier <- client.getIdBySchema(res.usedSchema)
-      payload <- identifier match {
-        case Some(id) => M.pure(format(id, res.payload))
-        case None => M.raiseError[Array[Byte]](new Throwable(s"There was no schema registered for ${res.usedSchema.getFullName}"))
-      }
-    } yield payload
+    confluentEnvelope.flatMapF[AvroDecodeContext[Either[AvroDecodeFailure, A]]] { case AvroDecodeContext((schema, bytes), decoder) =>
+      formulation.kleisliDecode[F, A](writerSchema = Some(schema)).run(AvroDecodeContext(bytes, decoder))
+    }
   }
 
   /**
@@ -48,20 +72,8 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
     * @tparam A The entity we want to decode to
     * @return Attempt[A], which might be a error or a success case
     */
-  def decode[A: AvroSchema : AvroDecoder](bytes: Array[Byte]): F[Either[AvroDecodeFailure, A]] = {
-    val bb = ByteBuffer.wrap(bytes)
-
-    for {
-      _ <- if (bb.get(0) == 0.toByte) M.pure(())
-      else M.raiseError(new Throwable("First byte was not the magic byte (0x0)"))
-      identifier = bb.getInt(1)
-      schema <- client.getSchemaById(identifier)
-      entity <- schema match {
-        case Some(s) => M.pure(formulation.decode[A](bb.getByteArray(5), writerSchema = Some(s)))
-        case None => M.raiseError(new Throwable(s"There was no schema in the registry for identifier $identifier"))
-      }
-    } yield entity
-  }
+  def decode[A: AvroSchema : AvroDecoder](bytes: Array[Byte]): F[Either[AvroDecodeFailure, A]] =
+    M.map(kleisliDecode[A].run(AvroDecodeContext(bytes, None)))(_.entity)
 
   /**
     * Verifies if the schema's are compatible with the current schema's already being registerd in the registry. In case of a union (ADT), we register multiple schema's
