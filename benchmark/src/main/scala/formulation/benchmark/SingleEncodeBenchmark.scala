@@ -31,7 +31,7 @@ class SingleEncodeBenchmark extends BenchSuite {
   def benchFormulation(): Unit = formulation.encode(user)
 
   @Benchmark
-  def benchFormulationMaterializedTypeClasses(): Unit = userEncoder.run(AvroEncodeContext(user, None))
+  def benchFormulationKleisli(): Unit = userEncoder.run(AvroEncodeContext(user, None))
 
   @Benchmark
   def benchCirce(): Unit = user.asJson.noSpaces

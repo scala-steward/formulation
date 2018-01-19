@@ -32,7 +32,7 @@ class SingleDecodeBenchmark extends BenchSuite {
   def benchFormulation(): Unit = formulation.decode[UserV1](avroBytes)
 
   @Benchmark
-  def benchFormulationMaterializedTypeClasses(): Unit = userDecoder.run(AvroDecodeContext(avroBytes, None))
+  def benchFormulationKleisli(): Unit = userDecoder.run(AvroDecodeContext(avroBytes, None))
 
   @Benchmark
   def benchCirce(): Unit = io.circe.parser.decode[UserV1](json)
