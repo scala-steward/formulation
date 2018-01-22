@@ -56,6 +56,11 @@ Format module: `"net.vectos" %% "formulation-$module" % "$version"` where $modul
 | refined                           | core, refined                 | Refinement types support                                                      |
 | schema-registry                   | core                          | Interfaces for interacting with schema-registry                               |
 | schema-registry-confluent-sttp    | schema-registry, sttp         | `SchemaRegistryClient` confluent schema-registry sttp implementation          |
+| schema-registry-scalacache        | schema-registry, scalacache   | `SchemaRegistryClient` cached API calls by scalacache                         |
+| akka-serializer                   | schema-registry, akka-actor   | `akka.serialization.Serializer` based on formulation                          |
+| akka-streams                      | schema-registry, akka-stream  | Akka-stream `Flow` combinators for encoding and decoding                      |
+
+
  
 ### Supported primitives
 
