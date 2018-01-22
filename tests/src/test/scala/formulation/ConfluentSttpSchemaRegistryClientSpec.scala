@@ -11,7 +11,7 @@ import scala.util.Success
 class ConfluentSttpSchemaRegistryClientSpec extends WordSpec with Matchers {
 
   private val catsSttpBackend = TryHttpURLConnectionBackend()
-  private val client = SchemaRegistryClient.lruCached(ConfluentSttpSchemaRegistryClient("http://localhost:8081", catsSttpBackend), 2000)
+  private val client = ConfluentSttpSchemaRegistryClient("http://localhost:8081", catsSttpBackend)
 
   "ConfluentSttpSchemaRegistryClientSpec" should {
     "register successfully" in {
