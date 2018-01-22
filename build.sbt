@@ -33,6 +33,15 @@ val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-stt
   )
   .dependsOn(schemaRegistry)
 
+val schemaRegistryScalacache = project.in(file("schema-registry-scalacache"))
+  .settings(commonSettings("schema-registry-scalacache"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.github.cb372" %% "scalacache-core" % "0.22.0"
+    )
+  )
+  .dependsOn(schemaRegistry)
+
 val akkaStreams = project.in(file("akka-streams"))
   .settings(commonSettings("akka-streams"))
   .settings(
@@ -51,6 +60,7 @@ val akkaSerializer = project.in(file("akka-serializer"))
   )
   .dependsOn(core, schemaRegistry)
 
+
 val tests = project.in(file("tests"))
   .settings(noPublishSettings)
   .settings(commonSettings("tests"))
@@ -58,10 +68,11 @@ val tests = project.in(file("tests"))
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test,
-      "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.9" % Test
+      "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.9" % Test,
+      "com.github.cb372" %% "scalacache-caffeine" % "0.22.0" % Test
     )
   )
-  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, akkaStreams, akkaSerializer)
+  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)
 
 val benchmark = project.in(file("benchmark"))
   .settings(noPublishSettings)
