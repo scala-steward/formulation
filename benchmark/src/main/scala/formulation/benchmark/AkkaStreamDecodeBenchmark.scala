@@ -16,12 +16,12 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, _}
 
-//sbt "benchmark/jmh:run -i 10 -wi 10 -f 2 -t 1 formulation.benchmark.SingleDecodeBenchmark"
+//sbt "benchmark/jmh:run -i 10 -wi 10 -f 2 -t 1 formulation.benchmark.AkkaStreamDecodeBenchmark"
 
 @State(Scope.Thread)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-class StreamDecodeBenchmark extends BenchSuite {
+class AkkaStreamDecodeBenchmark extends BenchSuite {
 
   private implicit val system: ActorSystem = ActorSystem()
   private implicit val materializer: Materializer = ActorMaterializer()

@@ -23,7 +23,7 @@ import scala.concurrent.duration._
 @State(Scope.Thread)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-class StreamEncodoeBenchmark extends BenchSuite {
+class AkkaStreamEncodeBenchmark extends BenchSuite {
 
   private implicit val system: ActorSystem = ActorSystem()
   private implicit val materializer: Materializer = ActorMaterializer()

@@ -42,6 +42,15 @@ val akkaStreams = project.in(file("akka-streams"))
   )
   .dependsOn(core)
 
+val akkaSerializer = project.in(file("akka-serializer"))
+  .settings(commonSettings("akka-serializer"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor" % "2.5.9"
+    )
+  )
+  .dependsOn(core, schemaRegistry)
+
 val tests = project.in(file("tests"))
   .settings(noPublishSettings)
   .settings(commonSettings("tests"))
@@ -52,7 +61,7 @@ val tests = project.in(file("tests"))
       "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.9" % Test
     )
   )
-  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, akkaStreams)
+  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, akkaStreams, akkaSerializer)
 
 val benchmark = project.in(file("benchmark"))
   .settings(noPublishSettings)
@@ -66,7 +75,7 @@ val benchmark = project.in(file("benchmark"))
       "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.0"
     )
   )
-  .dependsOn(core, akkaStreams)
+  .dependsOn(core, akkaStreams, schemaRegistry, akkaSerializer)
   .enablePlugins(JmhPlugin)
 
 lazy val noPublishSettings = Seq(
@@ -154,4 +163,4 @@ val scalacOptions212 = Seq(
 
 val root = project.in(file("."))
   .settings(commonSettings("core") ++ noPublishSettings)
-  .aggregate(core, refined, schemaRegistry, schemaRegistryConfluentSttp)
+  .aggregate(core, refined, schemaRegistry, schemaRegistryConfluentSttp, akkaStreams, akkaSerializer)

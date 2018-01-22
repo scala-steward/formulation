@@ -3,16 +3,14 @@ package formulation
 import cats._
 import cats.data.{EitherT, StateT}
 import cats.implicits._
-import formulation.schemaregistry.{SchemaRegistryClient, _}
-import org.apache.avro.Schema
+import formulation.schemaregistry._
+import formulation.util._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, WordSpec}
 
 class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks with Matchers with ArbitraryHelpers with EitherValues {
 
-  case class SchemaEntry(id: Int, subject: String, schema: Schema)
-  case class SchemaRegistryState(compatLevels: Map[String, AvroSchemaCompatibility], entries: List[SchemaEntry])
-
+  private val client = new StatefulSchemaRegistryClient[EitherT[Eval, Throwable, ?]]
   private val sr = SchemaRegistry[StateT[EitherT[Eval, Throwable, ?], SchemaRegistryState, ?]](client)
   private val entries = List(
     SchemaEntry(1, "formulation.DateSelected", schema[BookingProcess.DateSelected]),
@@ -145,36 +143,6 @@ class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks wit
       sr.registerSchemas(int).runA(registryState()).value.value.left.value.getMessage shouldBe "We cannot register the type: INT as it has no fullname"
     }
 
-  }
-
-  private def client[F[_]](implicit F: Monad[F]): SchemaRegistryClient[StateT[F, SchemaRegistryState, ?]] = new SchemaRegistryClient[StateT[F, SchemaRegistryState, ?]] {
-    override def getSchemaById(id: Int): StateT[F, SchemaRegistryState, Option[Schema]] =
-      StateT.inspect[F, SchemaRegistryState, Option[Schema]](_.entries.find(_.id == id).map(_.schema))
-
-    override def getIdBySchema(schema: Schema): StateT[F, SchemaRegistryState, Option[Int]] =
-      StateT.inspect[F, SchemaRegistryState, Option[Int]](_.entries.find(x => x.schema == schema && x.subject == schema.getFullName).map(_.id))
-
-    override def registerSchema(schema: Schema): StateT[F, SchemaRegistryState, Int] =
-      for {
-        existingId <- StateT.inspect[F, SchemaRegistryState, Option[Int]](_.entries.find(_.schema == schema).map(_.id))
-        id <- existingId match {
-          case Some(id) => StateT.pure[F, SchemaRegistryState, Int](id)
-          case None =>
-            for {
-              maxId <- StateT.inspect[F, SchemaRegistryState, Int](x => if (x.entries.nonEmpty) x.entries.maxBy(_.id).id else 0)
-              _ <- StateT.modify[F, SchemaRegistryState](sr => sr.copy(entries = SchemaEntry(maxId + 1, schema.getFullName, schema) :: sr.entries))
-            } yield maxId + 1
-        }
-      } yield id
-
-    override def checkCompatibility(schema: Schema): StateT[F, SchemaRegistryState, Boolean] =
-      StateT.inspect[F, SchemaRegistryState, Boolean](_.entries.filter(_.subject == schema.getFullName).forall(y => AvroSchemaCompatibility(y.schema, schema) == AvroSchemaCompatibility.Full))
-
-    override def getCompatibilityLevel(subject: String): StateT[F, SchemaRegistryState, Option[AvroSchemaCompatibility]] =
-      StateT.inspect[F, SchemaRegistryState, Option[AvroSchemaCompatibility]](_.compatLevels.get(subject))
-
-    override def setCompatibilityLevel(subject: String, desired: AvroSchemaCompatibility): StateT[F, SchemaRegistryState, AvroSchemaCompatibility] =
-      StateT.modify[F, SchemaRegistryState](sr => sr.copy(compatLevels = sr.compatLevels + (subject -> desired))) >> StateT.pure(desired)
   }
 
 }

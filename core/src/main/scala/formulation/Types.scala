@@ -97,3 +97,5 @@ object Attempt {
     case Some(value) => success(value)
   }
 }
+
+final case class AvroDecodeException(record: GenericRecord, errors: List[AvroDecodeError]) extends Throwable(s"Failed to decode a `${record.getSchema.getFullName}`")
