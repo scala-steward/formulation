@@ -97,7 +97,7 @@ lazy val noPublishSettings = Seq(
 
 def commonSettings(n: String) = Seq(
   name := s"formulation-$n",
-  version := "0.4.0",
+  version := "0.4.1",
   organization := "net.vectos",
   crossScalaVersions := Seq("2.11.12", "2.12.4"),
   scalaVersion := "2.12.4",

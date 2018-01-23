@@ -1,8 +1,13 @@
+### Version 0.4.1 (23-1-2018)
+
+- Fix a inconsistency in the `encodeKleisli` arrow type signature [#35](https://github.com/vectos/formulation/pull/35)
+- Rename AvroSchemaCompatibility.apply params to `schema1` and `schema2` [#34](https://github.com/vectos/formulation/pull/34)
+
 ### Version 0.4 (22-1-2018)
 
 - Add akka-streams support [#9](https://github.com/vectos/formulation/issues/9)
 - Add akka-serializer support [#28](https://github.com/vectos/formulation/issues/28)
-- calacache SchemaRegistryClient [#30](https://github.com/vectos/formulation/issues/30)
+- Scalacache SchemaRegistryClient [#30](https://github.com/vectos/formulation/issues/30)
 
 ### Version 0.3.1 (18-1-2018)
 
