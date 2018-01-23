@@ -14,19 +14,19 @@ class CompatibilitySpec extends WordSpec with Matchers {
 
   "Compatiblity" should {
     "return Full for UserV1 and UserV2 - defaults given" in {
-      AvroSchemaCompatibility(writer = v1, reader = v2) shouldBe AvroSchemaCompatibility.Full
+      AvroSchemaCompatibility(schema1 = v1, schema2 = v2) shouldBe AvroSchemaCompatibility.Full
     }
 
     "return Foward for UserV1 and UserV3 - no defaults" in {
-      AvroSchemaCompatibility(writer = v1, reader = v3) shouldBe AvroSchemaCompatibility.Forward
+      AvroSchemaCompatibility(schema1 = v1, schema2 = v3) shouldBe AvroSchemaCompatibility.Forward
     }
 
     "return Backward for UserV1 and UserV3 - no defaults" in {
-      AvroSchemaCompatibility(writer = v3, reader = v1) shouldBe AvroSchemaCompatibility.Backward
+      AvroSchemaCompatibility(schema1 = v3, schema2 = v1) shouldBe AvroSchemaCompatibility.Backward
     }
 
     "return NotCompatible for UserV1 and Generic" in {
-      AvroSchemaCompatibility(writer = v3, reader = genericSchema) shouldBe AvroSchemaCompatibility.None
+      AvroSchemaCompatibility(schema1 = v3, schema2 = genericSchema) shouldBe AvroSchemaCompatibility.None
     }
 
     "work while encoding as V1, we should get the right default values when decoding as V2" in {

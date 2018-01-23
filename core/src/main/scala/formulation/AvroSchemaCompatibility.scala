@@ -29,14 +29,14 @@ object AvroSchemaCompatibility {
 
   val all = Set(None, Forward, Backward, Full)
 
-  def apply(writer: Schema, reader: Schema): AvroSchemaCompatibility =
-    (isCompatible(writer)(reader), isCompatible(reader)(writer)) match {
+  def apply(schema1: Schema, schema2: Schema): AvroSchemaCompatibility =
+    (isCompatible(schema1)(schema2), isCompatible(schema2)(schema1)) match {
       case (false, true) => Backward
       case (true, false) => Forward
       case (true, true) => Full
       case (false, false) => None
     }
 
-  private def isCompatible(target: Schema)(comparison: Schema): Boolean =
-    SchemaCompatibility.checkReaderWriterCompatibility(target, comparison).getType == COMPATIBLE
+  private def isCompatible(reader: Schema)(writer: Schema): Boolean =
+    SchemaCompatibility.checkReaderWriterCompatibility(reader, writer).getType == COMPATIBLE
 }
