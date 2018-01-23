@@ -3,7 +3,6 @@ package formulation.akkaserializer
 import akka.serialization.Serializer
 import formulation._
 import formulation.schemaregistry.SchemaRegistry
-import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.{BinaryDecoder, BinaryEncoder}
 
 import scala.reflect.ClassTag
@@ -20,7 +19,7 @@ abstract class FormulationAkkaSerializer[A <: AnyRef : ClassTag : AvroSchema : A
     case x: A =>
       val res = sr.kleisliEncode.run(AvroEncodeContext(x, binaryEncoder)).orThrow
       binaryEncoder = res.binaryEncoder
-      res.entity
+      res.entity.payload
     case other =>
       throw new Throwable(s"Could not encode $other, didn't match serializer")
   }

@@ -2,7 +2,6 @@ package formulation
 
 import cats.implicits._
 import com.softwaremill.sttp.TryHttpURLConnectionBackend
-import formulation.schemaregistry.SchemaRegistryClient
 import formulation.schemaregistry.confluent.sttp.ConfluentSttpSchemaRegistryClient
 import org.scalatest.{Matchers, WordSpec}
 

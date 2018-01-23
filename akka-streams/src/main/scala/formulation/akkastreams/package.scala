@@ -44,11 +44,10 @@ package object akkastreams {
     * union later, because we can discriminate by using the schema id.
     *
     * @param f The Kleisli
-    * @param ec A ExecutionContext
     * @tparam I The input type
     * @return A Flow which translate `I` to `Array[Byte]`
     */
-  def kleisliEncode[I](f: Kleisli[Future, AvroEncodeContext[I], AvroEncodeContext[AvroEncodeResult]])(implicit ec: ExecutionContext): Flow[I, Array[Byte], NotUsed] =
+  def kleisliEncode[I](f: Kleisli[Future, AvroEncodeContext[I], AvroEncodeContext[AvroEncodeResult]]): Flow[I, Array[Byte], NotUsed] =
     Flow[I].scanAsync(AvroEncodeContext(AvroEncodeResult(Schema.create(Schema.Type.NULL), Array.empty), None)) { case (ctx, entity) =>
       f.run(AvroEncodeContext(entity, ctx.binaryEncoder))
     } filter(_.entity.payload.nonEmpty) map(_.entity.payload)
@@ -62,11 +61,10 @@ package object akkastreams {
     * unions, because we can discriminate by using the schema id.
     *
     * @param f The Kleisli
-    * @param ec A ExecutionContext
     * @tparam O The output type
     * @return A Flow which translate `Array[Byte]` to `O`
     */
-  def kleisliDecode[O](f: Kleisli[Future, AvroDecodeContext[Array[Byte]], AvroDecodeContext[Either[AvroDecodeFailure, O]]])(implicit ec: ExecutionContext): Flow[Array[Byte], O, NotUsed] =
+  def kleisliDecode[O](f: Kleisli[Future, AvroDecodeContext[Array[Byte]], AvroDecodeContext[Either[AvroDecodeFailure, O]]]): Flow[Array[Byte], O, NotUsed] =
     Flow[Array[Byte]].scanAsync(AvroDecodeContext[Either[AvroDecodeFailure, O]](Left(AvroDecodeFailure.Noop), None)) { case (ctx, bytes) =>
       f.run(AvroDecodeContext(bytes, ctx.binaryDecoder))
     }.map(_.entity).collect {

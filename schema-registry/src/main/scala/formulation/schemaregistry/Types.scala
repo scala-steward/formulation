@@ -13,7 +13,7 @@ import scala.collection.mutable
 
 final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implicit M: MonadError[F, Throwable]) {
 
-  def kleisliEncode[A : AvroSchema : AvroEncoder]: Kleisli[F, AvroEncodeContext[A], AvroEncodeContext[Array[Byte]]] = {
+  def kleisliEncode[A : AvroSchema : AvroEncoder]: Kleisli[F, AvroEncodeContext[A], AvroEncodeContext[AvroEncodeResult]] = {
     def format(identifier: Int, payload: Array[Byte]): Array[Byte] = {
       val byteBuffer = ByteBuffer.allocate(5)
       byteBuffer.put(0.toByte)
@@ -21,14 +21,14 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
       byteBuffer.array() ++ payload
     }
 
-    def confluentEnvelope = Kleisli[F, AvroEncodeContext[AvroEncodeResult], AvroEncodeContext[Array[Byte]]] { ctx =>
+    def confluentEnvelope = Kleisli[F, AvroEncodeContext[AvroEncodeResult], AvroEncodeContext[AvroEncodeResult]] { ctx =>
       for {
         identifier <- client.getIdBySchema(ctx.entity.usedSchema)
         payload <- identifier match {
           case Some(id) => M.pure(format(id, ctx.entity.payload))
           case None => M.raiseError[Array[Byte]](new Throwable(s"There was no schema registered for ${ctx.entity.usedSchema.getFullName}"))
         }
-      } yield AvroEncodeContext(payload, ctx.binaryEncoder)
+      } yield AvroEncodeContext(AvroEncodeResult(ctx.entity.usedSchema, payload), ctx.binaryEncoder)
     }
 
     formulation.kleisliEncode[F, A] andThen confluentEnvelope
@@ -41,7 +41,7 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
     * @tparam A The entity we want to decode to
     * @return The payload as a array of bytes
     */
-  def encode[A: AvroSchema : AvroEncoder](value: A): F[Array[Byte]] = M.map(kleisliEncode.run(AvroEncodeContext(value, None)))(_.entity)
+  def encode[A: AvroSchema : AvroEncoder](value: A): F[Array[Byte]] = M.map(kleisliEncode.run(AvroEncodeContext(value, None)))(_.entity.payload)
 
 
   def kleisliDecode[A: AvroSchema : AvroDecoder]: Kleisli[F, AvroDecodeContext[Array[Byte]], AvroDecodeContext[Either[AvroDecodeFailure, A]]] = {

@@ -174,4 +174,4 @@ val scalacOptions212 = Seq(
 
 val root = project.in(file("."))
   .settings(commonSettings("core") ++ noPublishSettings)
-  .aggregate(core, refined, schemaRegistry, schemaRegistryConfluentSttp, akkaStreams, akkaSerializer)
+  .aggregate(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)

@@ -21,8 +21,8 @@ class AkkaStreamSpec extends WordSpec with GeneratorDrivenPropertyChecks with Ma
           .via(encoder[UserV1])
           .via(decoder[UserV1])
           .runWith(TestSink.probe(system))
-          .request(progress.size)
-          .expectNextN(progress.size) == progress
+          .request(progress.size.toLong)
+          .expectNextN(progress.size.toLong) == progress
       }
     }
   }
