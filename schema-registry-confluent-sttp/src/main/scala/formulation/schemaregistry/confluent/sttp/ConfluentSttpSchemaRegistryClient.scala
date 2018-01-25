@@ -59,16 +59,26 @@ final class ConfluentSttpSchemaRegistryClient[F[_]] private (baseUri: String)
       result <- M.fromTry(Try(Parser.parseUnsafe[JValue](body).get("id").asInt))
     } yield result
 
-  override def checkCompatibility(schema: Schema): F[Boolean] =
+  override def checkCompatibility(schema: Schema): F[Boolean] = {
+    def parseResponse(resp: Response[String]): F[Boolean] =
+      for {
+        body <- M.fromEither(resp.body.left.map(err => new Throwable(s"Status code was ${resp.code} with body '$err'")))
+        compat <- M.fromTry(Try(Parser.parseUnsafe[JValue](body).get("is_compatible").asBoolean))
+      } yield compat
+
     for {
       resp <- sttp
         .post(uri"$baseUri/compatibility/subjects/${schema.getFullName}/versions/latest")
         .header("Content-Type", "application/vnd.schemaregistry.v1+json")
         .body(schemaAsJson(schema))
         .send[F]
-      body <- M.fromEither(resp.body.left.map(err => new Throwable(s"Status code was ${resp.code} with body '$err'")))
-      compat <- M.fromTry(Try(Parser.parseUnsafe[JValue](body).get("is_compatible").asBoolean))
+      compat <- resp.code match {
+        case 404 => M.pure(true)
+        case 200 => parseResponse(resp)
+        case _ => M.raiseError[Boolean](new Throwable(s"Unexpected status code ${resp.code} for checkCompatibility"))
+      }
     } yield compat
+  }
 
   private def schemaAsJson(schema: Schema) =
     s"""{"schema": "${schema.toString().replaceAll("\"", "\\\\\"")}"}"""

@@ -22,6 +22,9 @@ class ConfluentSttpSchemaRegistryClientSpec extends WordSpec with Matchers {
     "check compatibility correctly: user v1 should be compatible with user v4" in {
       client.checkCompatibility(schema[UserV4]) shouldBe Success(true)
     }
+    "check compatibility correctly: non-existing entity should return true" in {
+      client.checkCompatibility(schema[PersonRefined]) shouldBe Success(true)
+    }
     "get id by a given schema" in {
       client.getIdBySchema(schema[UserV1]) shouldBe Success(Some(1))
     }
