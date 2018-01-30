@@ -33,6 +33,6 @@ class SchemaSpec extends WordSpec with Matchers  {
     }
 
     def schemaString[A](avroPart: Avro[A]): String =
-      AvroSchema[Generic[A]](Generic.codec(avroPart)).generateSchema.toString
+      AvroSchema[Generic[A]](Generic.codec(avroPart)).schema.toString
   }
 }

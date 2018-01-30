@@ -13,6 +13,10 @@ trait Avro[A] {
   def apply[F[_] : AvroAlgebra]: F[A]
 }
 
+object Avro {
+  def applyAlgebra[F[_], A](avro: Avro[A])(implicit F: AvroAlgebra[F]): F[A] = avro.apply[F]
+}
+
 trait AvroDsl extends AvroDslRecordN { self =>
 
   val int: Avro[Int] = new Avro[Int] {

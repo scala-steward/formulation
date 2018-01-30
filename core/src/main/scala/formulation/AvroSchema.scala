@@ -14,19 +14,19 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(msg = "AvroSchema[${A}] not found, did you implicitly define Avro[${A}]?")
 trait AvroSchema[A] {
-  val generateSchema: Schema
+  val schema: Schema
 }
 
 object AvroSchema {
 
   import scala.collection.JavaConverters._
 
-  def create[A](schema: Schema): AvroSchema[A] = new AvroSchema[A] {
-    override val generateSchema: Schema = schema
+  def create[A](s: Schema): AvroSchema[A] = new AvroSchema[A] {
+    override val schema: Schema = s
   }
 
   def by[A, B](fa: AvroSchema[A])(f: B => A): AvroSchema[B] = new AvroSchema[B] {
-    override val generateSchema: Schema = fa.generateSchema
+    override val schema: Schema = fa.schema
   }
 
   implicit val interpreter: AvroAlgebra[AvroSchema] = new AvroAlgebra[AvroSchema] with AvroSchemaRecordN {
@@ -67,19 +67,19 @@ object AvroSchema {
 
     override def imap[A, B](fa: AvroSchema[A])(f: A => B)(g: B => A): AvroSchema[B] = by(fa)(g)
 
-    override def option[A](from: AvroSchema[A]): AvroSchema[Option[A]] = AvroSchema.create(Schema.createUnion(Schema.create(Schema.Type.NULL), from.generateSchema))
+    override def option[A](from: AvroSchema[A]): AvroSchema[Option[A]] = AvroSchema.create(Schema.createUnion(Schema.create(Schema.Type.NULL), from.schema))
 
-    override def list[A](of: AvroSchema[A]): AvroSchema[List[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
+    override def list[A](of: AvroSchema[A]): AvroSchema[List[A]] = AvroSchema.create(Schema.createArray(of.schema))
 
     override def pmap[A, B](fa: AvroSchema[A])(f: A => Attempt[B])(g: B => A): AvroSchema[B] = by(fa)(g)
 
-    override def set[A](of: AvroSchema[A]): AvroSchema[Set[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
+    override def set[A](of: AvroSchema[A]): AvroSchema[Set[A]] = AvroSchema.create(Schema.createArray(of.schema))
 
-    override def vector[A](of: AvroSchema[A]): AvroSchema[Vector[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
+    override def vector[A](of: AvroSchema[A]): AvroSchema[Vector[A]] = AvroSchema.create(Schema.createArray(of.schema))
 
-    override def seq[A](of: AvroSchema[A]): AvroSchema[Seq[A]] = AvroSchema.create(Schema.createArray(of.generateSchema))
+    override def seq[A](of: AvroSchema[A]): AvroSchema[Seq[A]] = AvroSchema.create(Schema.createArray(of.schema))
 
-    override def map[K, V](value: AvroSchema[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.generateSchema))
+    override def map[K, V](value: AvroSchema[V])(mapKey: String => Attempt[K])(contramapKey: K => String): AvroSchema[Map[K, V]] = AvroSchema.create(Schema.createMap(value.schema))
 
     override def or[A, B](fa: AvroSchema[A], fb: AvroSchema[B]): AvroSchema[Either[A, B]] = {
       import scala.util.{Failure, Success, Try}
@@ -100,7 +100,7 @@ object AvroSchema {
         withoutNull ++ nulls
       }
 
-      val subschemas = List(fa.generateSchema, fb.generateSchema).flatMap(schemasOf)
+      val subschemas = List(fa.schema, fb.schema).flatMap(schemasOf)
 
       AvroSchema.create(Schema.createUnion(moveNullToHead(subschemas).asJava))
     }

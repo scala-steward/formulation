@@ -1,17 +1,14 @@
 package formulation
 
-import eu.timepit.refined.api.Refined
 import eu.timepit.refined._
 import eu.timepit.refined.collection._
-import eu.timepit.refined.numeric.Positive
-import formulation.refined._
 import org.scalatest.{Inside, Matchers, WordSpec}
 
 class RefinedSpec extends WordSpec with Matchers with Inside {
   "Refined" should {
     "be compatible" in {
-      val schemaRefined = AvroSchema[PersonRefined].generateSchema
-      val schemaUnrefined = AvroSchema[PersonUnrefined].generateSchema
+      val schemaRefined = AvroSchema[PersonRefined].schema
+      val schemaUnrefined = AvroSchema[PersonUnrefined].schema
 
       AvroSchemaCompatibility(schemaRefined, schemaUnrefined) shouldBe AvroSchemaCompatibility.Full
     }
@@ -36,20 +33,3 @@ class RefinedSpec extends WordSpec with Matchers with Inside {
   }
 }
 
-case class PersonUnrefined(name: String, age: Int)
-
-object PersonUnrefined {
-  implicit val codec: Avro[PersonUnrefined] = record2("user", "Person")(PersonUnrefined.apply)(
-    "name" -> member(string, _.name),
-    "age" -> member(int, _.age)
-  )
-}
-
-case class PersonRefined(name: String Refined NonEmpty, age: Int Refined Positive)
-
-object PersonRefined {
-  implicit val codec: Avro[PersonRefined] = record2("user", "Person")(PersonRefined.apply)(
-    "name" -> member(string.refine[NonEmpty], _.name),
-    "age" -> member(int.refine[Positive], _.age)
-  )
-}

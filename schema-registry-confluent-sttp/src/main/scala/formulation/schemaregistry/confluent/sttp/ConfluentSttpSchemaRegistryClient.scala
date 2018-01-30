@@ -14,13 +14,11 @@ import scala.util.control.NonFatal
 final class ConfluentSttpSchemaRegistryClient[F[_]] private (baseUri: String)
                                                             (implicit B: SttpBackend[F, Nothing], M: cats.MonadError[F, Throwable]) extends SchemaRegistryClient[F] {
 
-  private val schemaParser = new Schema.Parser()
-
   override def getSchemaById(id: Int): F[Option[Schema]] = {
 
     def parseResponse(resp: Response[String]): F[Option[Schema]] = for {
       body <- M.fromEither(resp.body.left.map(err => new Throwable(s"Status code was ${resp.code} with body '$err'")))
-      result <- M.fromTry(Try(schemaParser.parse(Parser.parseUnsafe[JValue](body).get("schema").asString)))
+      result <- M.fromTry(Try(Schema.parse(Parser.parseUnsafe[JValue](body).get("schema").asString)))
     } yield Some(result)
 
     for {

@@ -85,7 +85,7 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
     * @return A list of SchemaRegistryCompatibilityResult
     */
   def verifyCompatibility[A](avro: Avro[A], desired: AvroSchemaCompatibility = AvroSchemaCompatibility.Full): F[List[SchemaRegistryCompatibilityResult]] = {
-    val schema = avro.apply[AvroSchema].generateSchema
+    val schema = avro.apply[AvroSchema].schema
 
     def run(s: Schema): F[SchemaRegistryCompatibilityResult] = for {
       _ <- client.setCompatibilityLevel(s.getFullName, desired)
@@ -116,7 +116,7 @@ final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implic
     * @return A list of SchemaRegistryRegisterResult
     */
   def registerSchemas[A](avro: Avro[A]): F[List[SchemaRegistryRegisterResult]] = {
-    val schema = avro.apply[AvroSchema].generateSchema
+    val schema = avro.apply[AvroSchema].schema
 
     schema.getType match {
       case Schema.Type.RECORD =>

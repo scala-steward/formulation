@@ -142,7 +142,7 @@ object Boilerplate {
         |trait AvroSchemaRecordN { self: AvroAlgebra[AvroSchema] =>
         |
         |  private def field[A, B](name: String, member: Member[AvroSchema, A, B]): Schema.Field = {
-        |    val field = new Schema.Field(name, member.typeClass.generateSchema, member.documentation.orNull, member.defaultValue.orNull)
+        |    val field = new Schema.Field(name, member.typeClass.schema, member.documentation.orNull, member.defaultValue.orNull)
         |    member.aliases.foreach(alias => field.addAlias(alias))
         |    field
         |  }

@@ -44,12 +44,33 @@ final case class AvroEncodeContext[A](entity: A, binaryEncoder: Option[BinaryEnc
 
 final case class AvroEncodeResult(usedSchema: Schema, payload: Array[Byte])
 
+sealed trait AvroDecodeSkipReason
+
+object AvroDecodeSkipReason {
+
+  /**
+    * No reason for skipping, used in akkastreams module (using scan)
+    */
+  case object NoReason extends AvroDecodeSkipReason
+
+  /**
+    * In case the readerSchema is a UNION and the writerSchema is not present any more in the readerSchema,
+    * it will return this skip reason.
+    *
+    * For akka-serializer we'll propagate this, so it can be fetched in event adapter and ignored.
+    *
+    * @param writerSchema The schema which was used to write the data
+    * @param readerSchema The schema which was used to read the data
+    */
+  final case class NotMemberOfUnion(writerSchema: Schema, readerSchema: Schema) extends AvroDecodeSkipReason
+}
+
 sealed trait AvroDecodeFailure
 
 object AvroDecodeFailure {
   final case class Errors(record: GenericRecord, errors: List[AvroDecodeError]) extends AvroDecodeFailure
   final case class Exception(throwable: Throwable) extends AvroDecodeFailure
-  final case object Noop extends AvroDecodeFailure
+  final case class Skip(reason: AvroDecodeSkipReason) extends AvroDecodeFailure
 }
 
 sealed trait Attempt[+A] { self =>

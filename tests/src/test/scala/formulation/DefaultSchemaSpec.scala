@@ -101,6 +101,6 @@ class DefaultSchemaSpec extends WordSpec with Matchers with GeneratorDrivenPrope
     }
 
     def schema[A](avroPart: Avro[A], default: A): String =
-      AvroSchema[Generic[A]](Generic.codec(avroPart, Some(default))).generateSchema.toString
+      AvroSchema[Generic[A]](Generic.codec(avroPart, Some(default))).schema.toString
   }
 }

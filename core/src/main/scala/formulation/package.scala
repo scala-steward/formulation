@@ -8,6 +8,7 @@ import org.apache.avro.generic.{GenericDatumReader, GenericDatumWriter, GenericR
 import org.apache.avro.io.{DecoderFactory, EncoderFactory}
 
 import scala.util.control.NonFatal
+import scala.collection.JavaConverters._
 
 package object formulation extends AvroDsl {
 
@@ -39,7 +40,7 @@ package object formulation extends AvroDsl {
       val os = new ByteArrayOutputStream()
 
       try {
-        val schema = S.generateSchema
+        val schema = S.schema
         val (usedSchema, record: GenericRecord) = R.encode(schema, ctx.entity)
         val dataWriter = new GenericDatumWriter[GenericRecord](usedSchema)
         val encoder = EncoderFactory.get().directBinaryEncoder(os, ctx.binaryEncoder.orNull)
@@ -82,14 +83,10 @@ package object formulation extends AvroDsl {
                             (implicit F: Applicative[F], R: AvroDecoder[A], S: AvroSchema[A]): Kleisli[F, AvroDecodeContext[Array[Byte]], AvroDecodeContext[Either[AvroDecodeFailure, A]]] =
     Kleisli[F, AvroDecodeContext[Array[Byte]], AvroDecodeContext[Either[AvroDecodeFailure, A]]] { ctx =>
       val in = new ByteArrayInputStream(ctx.entity)
+      val binDecoder = DecoderFactory.get().directBinaryDecoder(in, ctx.binaryDecoder.orNull)
 
-      try {
-        def schema = S.generateSchema
-
-        val wSchema = writerSchema.getOrElse(schema)
-        val rSchema = readerSchema.getOrElse(schema)
+      def doDecode(wSchema: Schema, rSchema: Schema): F[AvroDecodeContext[Either[AvroDecodeFailure, A]]] = {
         val datumReader = new GenericDatumReader[GenericRecord](wSchema, rSchema)
-        val binDecoder = DecoderFactory.get().directBinaryDecoder(in, ctx.binaryDecoder.orNull)
         val record = datumReader.read(null, binDecoder)
 
         F.pure {
@@ -98,6 +95,24 @@ package object formulation extends AvroDsl {
             case Right(value) => AvroDecodeContext(Right(value), Some(binDecoder))
           }
         }
+      }
+
+      try {
+        def schema = S.schema
+
+        val wSchema = writerSchema.getOrElse(schema)
+        val rSchema = readerSchema.getOrElse(schema)
+
+        (wSchema.getType, rSchema.getType) match {
+          case (Schema.Type.RECORD, Schema.Type.UNION) =>
+            if(rSchema.getTypes.asScala.exists(_.getFullName == wSchema.getFullName)) doDecode(wSchema, rSchema)
+            else F.pure(AvroDecodeContext(Left(AvroDecodeFailure.Skip(AvroDecodeSkipReason.NotMemberOfUnion(wSchema, rSchema))), Some(binDecoder)))
+
+          case _ =>
+            doDecode(wSchema, rSchema)
+        }
+
+
       }
       catch {
         case NonFatal(ex) => F.pure(AvroDecodeContext(Left(AvroDecodeFailure.Exception(ex)), ctx.binaryDecoder))
@@ -129,5 +144,5 @@ package object formulation extends AvroDsl {
     * @tparam A The type of the value to get the Schema from
     * @return An Avro Schema
     */
-  def schema[A](implicit A: Avro[A]): Schema = A.apply[AvroSchema].generateSchema
+  def schema[A](implicit A: Avro[A]): Schema = A.apply[AvroSchema].schema
 }

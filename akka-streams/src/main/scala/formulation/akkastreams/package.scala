@@ -65,7 +65,7 @@ package object akkastreams {
     * @return A Flow which translate `Array[Byte]` to `O`
     */
   def kleisliDecode[O](f: Kleisli[Future, AvroDecodeContext[Array[Byte]], AvroDecodeContext[Either[AvroDecodeFailure, O]]]): Flow[Array[Byte], O, NotUsed] =
-    Flow[Array[Byte]].scanAsync(AvroDecodeContext[Either[AvroDecodeFailure, O]](Left(AvroDecodeFailure.Noop), None)) { case (ctx, bytes) =>
+    Flow[Array[Byte]].scanAsync(AvroDecodeContext[Either[AvroDecodeFailure, O]](Left(AvroDecodeFailure.Skip(AvroDecodeSkipReason.NoReason)), None)) { case (ctx, bytes) =>
       f.run(AvroDecodeContext(bytes, ctx.binaryDecoder))
     }.map(_.entity).collect {
       case Left(AvroDecodeFailure.Exception(ex)) => throw ex

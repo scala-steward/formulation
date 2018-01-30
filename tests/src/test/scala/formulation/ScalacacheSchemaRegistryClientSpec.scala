@@ -16,13 +16,7 @@ class ScalacacheSchemaRegistryClientSpec extends WordSpec with Matchers {
 
   private val schemas = Caffeine.newBuilder().recordStats().maximumSize(10000L).build[String, Entry[Int]]
   private val ids = Caffeine.newBuilder().recordStats().maximumSize(10000L).build[String, Entry[Schema]]
-  private val predefinedClient = new PredefinedSchemaRegistryClient[Try](
-    List(
-      SchemaEntry(1, "event.Completed", schema[Event.Completed]),
-      SchemaEntry(2, "event.Failed", schema[Event.Failed]),
-      SchemaEntry(3, "event.Started", schema[Event.Started])
-    )
-  )
+  private val predefinedClient = PredefinedSchemaRegistryClient.fromAvro[Try](Event.codec)
   private val cachedClient = ScalacacheSchemaRegistryClient(predefinedClient, CaffeineCache(schemas), CaffeineCache(ids))
 
   "ScalacacheSchemaRegistryClient" should {
