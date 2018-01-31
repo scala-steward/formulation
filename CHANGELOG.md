@@ -1,3 +1,8 @@
+# Changelog
+
+### Version 0.4.2
+- Added microsite
+
 ### Version 0.4.1 (23-1-2018)
 
 - Fix a inconsistency in the `encodeKleisli` arrow type signature [#35](https://github.com/vectos/formulation/pull/35)

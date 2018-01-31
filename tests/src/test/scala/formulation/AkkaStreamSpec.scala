@@ -1,12 +1,13 @@
 package formulation
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.{ActorMaterializer, Materializer}
+import formulation.akkastreams._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, WordSpec}
-import formulation.akkastreams._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class AkkaStreamSpec extends WordSpec with GeneratorDrivenPropertyChecks with Matchers with ArbitraryHelpers {

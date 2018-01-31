@@ -1,3 +1,6 @@
+import microsites.ExtraMdFileConfig
+
+
 val core = project.in(file("core"))
   .settings(commonSettings("core"))
   .settings(
@@ -88,6 +91,37 @@ val benchmark = project.in(file("benchmark"))
   )
   .dependsOn(core, akkaStreams, schemaRegistry, akkaSerializer)
   .enablePlugins(JmhPlugin)
+
+val docs = project.in(file("docs"))
+  .settings(noPublishSettings)
+  .settings(commonSettings("docs"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.github.cb372" %% "scalacache-caffeine" % "0.22.0"
+    ),
+    scalacOptions := Seq("-language:higherKinds"),
+    micrositeName := "formulation",
+    micrositeDescription := "Describe Avro data types",
+    micrositeBaseUrl := "/formulation",
+    micrositeDocumentationUrl := "/formulation/docs/",
+    micrositeGitterChannel := false,
+    micrositeGithubOwner := "vectos",
+    micrositeGithubRepo := "formulation",
+    micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
+    micrositeOrganizationHomepage := "http://vectos.net",
+    micrositeAuthor := "Vectos",
+    micrositeTwitterCreator := "@mark_dj",
+    micrositeExtraMdFiles := Map(
+      file("CHANGELOG.md") -> ExtraMdFileConfig(
+        "changelog.md",
+        "page",
+        Map("title" -> "Changelog", "section" -> "docs", "position" -> "5")
+      )
+    )
+  )
+  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)
+  .enablePlugins(MicrositesPlugin)
+
 
 lazy val noPublishSettings = Seq(
   publish := {},
