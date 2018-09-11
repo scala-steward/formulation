@@ -31,7 +31,7 @@ val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-stt
   .settings(
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp" %% "core" % "1.1.3",
-      "org.spire-math" %% "jawn-ast" % "0.11.0"
+      "org.spire-math" %% "jawn-ast" % "0.11.1"
     )
   )
   .dependsOn(schemaRegistry)
