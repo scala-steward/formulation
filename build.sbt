@@ -40,7 +40,7 @@ val schemaRegistryScalacache = project.in(file("schema-registry-scalacache"))
   .settings(commonSettings("schema-registry-scalacache"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.cb372" %% "scalacache-core" % "0.22.0"
+      "com.github.cb372" %% "scalacache-core" % "0.24.3"
     )
   )
   .dependsOn(schemaRegistry)
@@ -72,7 +72,7 @@ val tests = project.in(file("tests"))
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.9" % Test,
-      "com.github.cb372" %% "scalacache-caffeine" % "0.22.0" % Test
+      "com.github.cb372" %% "scalacache-caffeine" % "0.24.3" % Test
     )
   )
   .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)
@@ -97,7 +97,7 @@ val docs = project.in(file("docs"))
   .settings(commonSettings("docs"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.cb372" %% "scalacache-caffeine" % "0.22.0"
+      "com.github.cb372" %% "scalacache-caffeine" % "0.24.3"
     ),
     scalacOptions := Seq("-language:higherKinds"),
     micrositeName := "formulation",
