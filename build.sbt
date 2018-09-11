@@ -17,7 +17,7 @@ val refined = project.in(file("refined"))
   .settings(commonSettings("refined"))
   .settings(
     libraryDependencies ++= Seq(
-      "eu.timepit" %% "refined" % "0.8.6"
+      "eu.timepit" %% "refined" % "0.8.7"
     )
   )
   .dependsOn(core)
