@@ -58,7 +58,7 @@ val akkaSerializer = project.in(file("akka-serializer"))
   .settings(commonSettings("akka-serializer"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % "2.5.9"
+      "com.typesafe.akka" %% "akka-actor" % "2.5.16"
     )
   )
   .dependsOn(core, schemaRegistry)
