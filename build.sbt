@@ -137,7 +137,7 @@ def commonSettings(n: String) = Seq(
   scalaVersion := "2.12.4",
   scalacOptions := scalacOpts(scalaVersion.value),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4")
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
 )
 
 def scalacOpts(ver: String) = CrossVersion.partialVersion(ver) match {
