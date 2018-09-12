@@ -5,7 +5,7 @@ val core = project.in(file("core"))
   .settings(commonSettings("core"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "1.0.1",
+      "org.typelevel" %% "cats-core" % "1.4.0",
       "org.apache.avro" % "avro" % "1.8.2",
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
