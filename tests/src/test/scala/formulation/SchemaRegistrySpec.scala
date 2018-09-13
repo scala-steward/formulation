@@ -118,11 +118,11 @@ class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks wit
     }
 
     "fail encoding when there is no schema registered" in {
-      sr.encode(BookingProcess.NotStarted(0)).runA(registryState(List.empty)).value.value.left.value.getMessage shouldBe "There was no schema registered for formulation.NotStarted"
+      sr.encode(BookingProcess.NotStarted(0)).runA(registryState(List.empty)).value.value.left.get.getMessage shouldBe "There was no schema registered for formulation.NotStarted"
     }
 
     "fail decoding when the message doesn't start with the magic byte" in {
-      sr.decode[BookingProcess](Array(1, 2, 3).map(_.toByte)).runA(registryState()).value.value.left.value.getMessage shouldBe "First byte was not the magic byte (0x0)"
+      sr.decode[BookingProcess](Array(1, 2, 3).map(_.toByte)).runA(registryState()).value.value.left.get.getMessage shouldBe "First byte was not the magic byte (0x0)"
     }
 
     "fail decoding when the message identifier is not found in the schema registry" in {
@@ -132,15 +132,15 @@ class SchemaRegistrySpec extends WordSpec with GeneratorDrivenPropertyChecks wit
         result <- sr.decode[BookingProcess](bytes)
       } yield result
 
-      prg.runA(registryState()).value.value.left.value.getMessage shouldBe "There was no schema in the registry for identifier 3"
+      prg.runA(registryState()).value.value.left.get.getMessage shouldBe "There was no schema in the registry for identifier 3"
     }
 
     "fail compatibility check when the type is not union/record" in {
-      sr.verifyCompatibility(int).runA(registryState()).value.value.left.value.getMessage shouldBe "We cannot verify compatibility of the type: INT as it has no fullname"
+      sr.verifyCompatibility(int).runA(registryState()).value.value.left.get.getMessage shouldBe "We cannot verify compatibility of the type: INT as it has no fullname"
     }
 
     "fail registering a schema when the type is not union/record" in {
-      sr.registerSchemas(int).runA(registryState()).value.value.left.value.getMessage shouldBe "We cannot register the type: INT as it has no fullname"
+      sr.registerSchemas(int).runA(registryState()).value.value.left.get.getMessage shouldBe "We cannot register the type: INT as it has no fullname"
     }
 
   }

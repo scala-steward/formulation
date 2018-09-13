@@ -5,7 +5,7 @@ val core = project.in(file("core"))
   .settings(commonSettings("core"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "1.0.1",
+      "org.typelevel" %% "cats-core" % "1.4.0",
       "org.apache.avro" % "avro" % "1.8.2",
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
@@ -133,8 +133,8 @@ def commonSettings(n: String) = Seq(
   name := s"formulation-$n",
   version := "0.4.2",
   organization := "net.vectos",
-  crossScalaVersions := Seq("2.11.12", "2.12.4"),
-  scalaVersion := "2.12.4",
+  crossScalaVersions := Seq("2.11.12", "2.12.6"),
+  scalaVersion := "2.12.6",
   scalacOptions := scalacOpts(scalaVersion.value),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
