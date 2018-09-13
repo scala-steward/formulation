@@ -137,6 +137,8 @@ def commonSettings(n: String) = Seq(
   scalaVersion := "2.12.6",
   scalacOptions := scalacOpts(scalaVersion.value),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+  pgpPublicRing := file("./travis/local.pubring.asc"),
+  pgpSecretRing := file("./travis/local.secring.asc"),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
 )
 

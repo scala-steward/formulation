@@ -6,3 +6,4 @@ addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.4")
 
 addSbtPlugin("com.47deg"  % "sbt-microsites" % "0.7.15")
 
+addSbtPlugin("ch.epfl.scala" % "sbt-release-early" % "2.1.1")

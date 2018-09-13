@@ -1,39 +1,21 @@
 # Changelog
 
-### Version 0.4.2
-- Added microsite
+## 0.4.3 (13/09/2018)
 
-### Version 0.4.1 (23-1-2018)
+#### Enhancements:
 
-- Fix a inconsistency in the `encodeKleisli` arrow type signature [#35](https://github.com/vectos/formulation/pull/35)
-- Rename AvroSchemaCompatibility.apply params to `schema1` and `schema2` [#34](https://github.com/vectos/formulation/pull/34)
-
-### Version 0.4 (22-1-2018)
-
-- Add akka-streams support [#9](https://github.com/vectos/formulation/issues/9)
-- Add akka-serializer support [#28](https://github.com/vectos/formulation/issues/28)
-- Scalacache SchemaRegistryClient [#30](https://github.com/vectos/formulation/issues/30)
-
-### Version 0.3.1 (18-1-2018)
-
-- Better decode errors [#26](https://github.com/vectos/formulation/pull/26)
-
-### Version 0.3 (15-1-2018)
-
-- Remove Attempt [#18](https://github.com/vectos/formulation/issues/18)
-- Documentation and aliases for `Member` [#20](https://github.com/vectos/formulation/issues/20)
-- Logical types (UUID, Date, etc) in schema [#21](https://github.com/vectos/formulation/issues/21)
-- Add scala docs for the public API [#11](https://github.com/vectos/formulation/issues/11)
-
-### Version 0.2.2 (12-1-2018)
-
-- Support `java.util.ZonedDateTime` [#16](https://github.com/vectos/formulation/issues/16)
-- Schema Registry decode fails with discriminated unions which have isomorphic types [#14](https://github.com/vectos/formulation/issues/14)
-
-### Version 0.2 (11-1-2018)
-
-- Add schema registry support [#10](https://github.com/vectos/formulation/issues/10)
-
-### Version 0.1 (5-1-2018)
-
-- Initial release
+- Cats upgrade [#22](https://github.com/vectos/formulation/pull/22)
+- Upgrade sbt [#23](https://github.com/vectos/formulation/pull/23)
+- Update refined to 0.9.2 [#18](https://github.com/vectos/formulation/pull/18)
+- Update jawn-ast to 0.13.0 [#19](https://github.com/vectos/formulation/pull/19)
+- Update sbt-bintray to 0.5.4 [#12](https://github.com/vectos/formulation/pull/12)
+- Update jawn-ast to 0.11.1 [#13](https://github.com/vectos/formulation/pull/13)
+- Update kind-projector to 0.9.7 [#14](https://github.com/vectos/formulation/pull/14)
+- Update sbt-jmh to 0.3.4 [#16](https://github.com/vectos/formulation/pull/16)
+- Update sttp to 1.3.3 [#20](https://github.com/vectos/formulation/pull/20)
+- Update core to 1.3.3 [#17](https://github.com/vectos/formulation/pull/17)
+- Update scalacache-core to 0.24.3 [#7](https://github.com/vectos/formulation/pull/7)
+- Update core to 1.1.14 [#8](https://github.com/vectos/formulation/pull/8)
+- Update akka-actor to 2.5.16 [#9](https://github.com/vectos/formulation/pull/9)
+- Update akka-stream to 2.5.16 [#10](https://github.com/vectos/formulation/pull/10)
+- Update refined to 0.8.7 [#11](https://github.com/vectos/formulation/pull/11)
