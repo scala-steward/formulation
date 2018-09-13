@@ -137,6 +137,10 @@ def commonSettings(n: String) = Seq(
   scalaVersion := "2.12.6",
   scalacOptions := scalacOpts(scalaVersion.value),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+  releaseEarlyEnableSyncToMaven := false,
+  developers := List(Developer("mark_dj", "Mark de Jong", "mark@vectos.net", url("http://vectos.net"))),
+  homepage := Some(url("https://vectos.net/formulation")),
+  scmInfo := Some(ScmInfo(url("http://github.com/vectos/formulation"), "scm:git:git@github.com:vectos/formulation.git")),
   pgpPublicRing := file("./travis/local.pubring.asc"),
   pgpSecretRing := file("./travis/local.secring.asc"),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
