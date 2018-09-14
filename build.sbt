@@ -146,7 +146,7 @@ def commonSettings(n: String) = Seq(
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
 )
 
-val publishSettings = Seq(
+lazy val publishSettings = Seq(
   publishMavenStyle := false,
   publishArtifact in Test := false,
   publishArtifact in (Compile, packageDoc) := false,
