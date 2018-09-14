@@ -147,13 +147,14 @@ def commonSettings(n: String) = Seq(
 )
 
 lazy val publishSettings = Seq(
-  publishMavenStyle := false,
+//  publishMavenStyle := false,
   publishArtifact in Test := false,
   publishArtifact in (Compile, packageDoc) := false,
   publishArtifact in (Compile, packageSrc) := false,
   resolvers += Resolver.jcenterRepo,
   resolvers += Resolver.bintrayRepo("fristi", "maven"),
   updateOptions := updateOptions.value.withCachedResolution(true),
+  bintrayOrganization := Some("fristi"),
   bintrayRepository := "maven",
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   releaseEarlyEnableSyncToMaven := false,
