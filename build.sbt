@@ -3,6 +3,7 @@ import microsites.ExtraMdFileConfig
 
 val core = project.in(file("core"))
   .settings(commonSettings("core"))
+  .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "1.4.0",
@@ -15,6 +16,7 @@ val core = project.in(file("core"))
 
 val refined = project.in(file("refined"))
   .settings(commonSettings("refined"))
+  .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "eu.timepit" %% "refined" % "0.9.2"
@@ -24,10 +26,12 @@ val refined = project.in(file("refined"))
 
 val schemaRegistry = project.in(file("schema-registry"))
   .settings(commonSettings("schema-registry"))
+  .settings(publishSettings)
   .dependsOn(core)
 
 val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-sttp"))
   .settings(commonSettings("schema-registry-confluent-sttp"))
+  .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp" %% "core" % "1.3.3",
@@ -38,6 +42,7 @@ val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-stt
 
 val schemaRegistryScalacache = project.in(file("schema-registry-scalacache"))
   .settings(commonSettings("schema-registry-scalacache"))
+  .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "com.github.cb372" %% "scalacache-core" % "0.24.3"
@@ -47,6 +52,7 @@ val schemaRegistryScalacache = project.in(file("schema-registry-scalacache"))
 
 val akkaStreams = project.in(file("akka-streams"))
   .settings(commonSettings("akka-streams"))
+  .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream" % "2.5.16"
@@ -56,6 +62,7 @@ val akkaStreams = project.in(file("akka-streams"))
 
 val akkaSerializer = project.in(file("akka-serializer"))
   .settings(commonSettings("akka-serializer"))
+  .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % "2.5.16"
@@ -136,17 +143,29 @@ def commonSettings(n: String) = Seq(
   crossScalaVersions := Seq("2.11.12", "2.12.6"),
   scalaVersion := "2.12.6",
   scalacOptions := scalacOpts(scalaVersion.value),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
+)
+
+val publishSettings = Seq(
+  publishMavenStyle := false,
+  publishArtifact in Test := false,
+  publishArtifact in (Compile, packageDoc) := false,
+  publishArtifact in (Compile, packageSrc) := false,
+  resolvers += Resolver.jcenterRepo,
+  resolvers += Resolver.bintrayRepo("fristi", "maven"),
+  updateOptions := updateOptions.value.withCachedResolution(true),
+  bintrayRepository := "maven",
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   releaseEarlyEnableSyncToMaven := false,
   developers := List(Developer("mark_dj", "Mark de Jong", "mark@vectos.net", url("http://vectos.net"))),
   homepage := Some(url("https://vectos.net/formulation")),
   scmInfo := Some(ScmInfo(url("http://github.com/vectos/formulation"), "scm:git:git@github.com:vectos/formulation.git")),
   releaseEarlyWith := BintrayPublisher,
-  bintrayOrganization := Some("fristi"),
+  licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   pgpPublicRing := file("./travis/local.pubring.asc"),
-  pgpSecretRing := file("./travis/local.secring.asc"),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
+  pgpSecretRing := file("./travis/local.secring.asc")
 )
+
 
 def scalacOpts(ver: String) = CrossVersion.partialVersion(ver) match {
   case Some((2, scalaMajor)) if scalaMajor == 12 => scalacOptions212
@@ -215,5 +234,5 @@ val scalacOptions212 = Seq(
 )
 
 val root = project.in(file("."))
-  .settings(commonSettings("core") ++ noPublishSettings)
+  .settings(commonSettings("root") ++ noPublishSettings)
   .aggregate(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)
