@@ -142,6 +142,7 @@ def commonSettings(n: String) = Seq(
   homepage := Some(url("https://vectos.net/formulation")),
   scmInfo := Some(ScmInfo(url("http://github.com/vectos/formulation"), "scm:git:git@github.com:vectos/formulation.git")),
   releaseEarlyWith := BintrayPublisher,
+  bintrayOrganization := Some("fristi"),
   pgpPublicRing := file("./travis/local.pubring.asc"),
   pgpSecretRing := file("./travis/local.secring.asc"),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
