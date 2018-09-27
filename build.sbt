@@ -55,7 +55,7 @@ val akkaStreams = project.in(file("akka-streams"))
   .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-stream" % "2.5.16"
+      "com.typesafe.akka" %% "akka-stream" % "2.5.17"
     )
   )
   .dependsOn(core)
@@ -65,7 +65,7 @@ val akkaSerializer = project.in(file("akka-serializer"))
   .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % "2.5.16"
+      "com.typesafe.akka" %% "akka-actor" % "2.5.17"
     )
   )
   .dependsOn(core, schemaRegistry)
@@ -78,7 +78,7 @@ val tests = project.in(file("tests"))
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test,
-      "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.16" % Test,
+      "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.17" % Test,
       "com.github.cb372" %% "scalacache-caffeine" % "0.24.3" % Test
     )
   )
