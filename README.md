@@ -8,3 +8,6 @@ formulation
 
 _formulation_ is a EDSL (embedded domain specific language) for describing Avro data types.
 
+Powered by 
+
+[![JProfiler](https://www.ej-technologies.com/images/product_banners/jprofiler_small.png)](https://www.ej-technologies.com/products/jprofiler/overview.html)
