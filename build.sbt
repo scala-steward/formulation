@@ -19,7 +19,7 @@ val refined = project.in(file("refined"))
   .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "eu.timepit" %% "refined" % "0.9.2"
+      "eu.timepit" %% "refined" % "0.9.3"
     )
   )
   .dependsOn(core)
