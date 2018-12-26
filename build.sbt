@@ -1,7 +1,7 @@
-import microsites.ExtraMdFileConfig
+import microsites.{CdnDirectives, ExtraMdFileConfig}
 
-
-val core = project.in(file("core"))
+val core = project
+  .in(file("core"))
   .settings(commonSettings("core"))
   .settings(publishSettings)
   .settings(
@@ -11,25 +11,26 @@ val core = project.in(file("core"))
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
     coverageExcludedPackages := "formulation.*RecordN",
-    sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
+    sourceGenerators in Compile += (sourceManaged in Compile)
+      .map(Boilerplate.gen)
+      .taskValue
   )
 
-val refined = project.in(file("refined"))
+val refined = project
+  .in(file("refined"))
   .settings(commonSettings("refined"))
   .settings(publishSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      "eu.timepit" %% "refined" % "0.9.3"
-    )
-  )
+  .settings(libraryDependencies ++= Seq("eu.timepit" %% "refined" % "0.9.3"))
   .dependsOn(core)
 
-val schemaRegistry = project.in(file("schema-registry"))
+val schemaRegistry = project
+  .in(file("schema-registry"))
   .settings(commonSettings("schema-registry"))
   .settings(publishSettings)
   .dependsOn(core)
 
-val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-sttp"))
+val schemaRegistryConfluentSttp = project
+  .in(file("schema-registry-confluent-sttp"))
   .settings(commonSettings("schema-registry-confluent-sttp"))
   .settings(publishSettings)
   .settings(
@@ -40,7 +41,8 @@ val schemaRegistryConfluentSttp = project.in(file("schema-registry-confluent-stt
   )
   .dependsOn(schemaRegistry)
 
-val schemaRegistryScalacache = project.in(file("schema-registry-scalacache"))
+val schemaRegistryScalacache = project
+  .in(file("schema-registry-scalacache"))
   .settings(commonSettings("schema-registry-scalacache"))
   .settings(publishSettings)
   .settings(
@@ -50,28 +52,26 @@ val schemaRegistryScalacache = project.in(file("schema-registry-scalacache"))
   )
   .dependsOn(schemaRegistry)
 
-val akkaStreams = project.in(file("akka-streams"))
+val akkaStreams = project
+  .in(file("akka-streams"))
   .settings(commonSettings("akka-streams"))
   .settings(publishSettings)
   .settings(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-stream" % "2.5.18"
-    )
+    libraryDependencies ++= Seq("com.typesafe.akka" %% "akka-stream" % "2.5.18")
   )
   .dependsOn(core)
 
-val akkaSerializer = project.in(file("akka-serializer"))
+val akkaSerializer = project
+  .in(file("akka-serializer"))
   .settings(commonSettings("akka-serializer"))
   .settings(publishSettings)
   .settings(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % "2.5.18"
-    )
+    libraryDependencies ++= Seq("com.typesafe.akka" %% "akka-actor" % "2.5.18")
   )
   .dependsOn(core, schemaRegistry)
 
-
-val tests = project.in(file("tests"))
+val tests = project
+  .in(file("tests"))
   .settings(noPublishSettings)
   .settings(commonSettings("tests"))
   .settings(
@@ -82,9 +82,18 @@ val tests = project.in(file("tests"))
       "com.github.cb372" %% "scalacache-caffeine" % "0.26.0" % Test
     )
   )
-  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)
+  .dependsOn(
+    core,
+    refined,
+    schemaRegistry,
+    schemaRegistryConfluentSttp,
+    schemaRegistryScalacache,
+    akkaStreams,
+    akkaSerializer
+  )
 
-val benchmark = project.in(file("benchmark"))
+val benchmark = project
+  .in(file("benchmark"))
   .settings(noPublishSettings)
   .settings(commonSettings("benchmark"))
   .settings(
@@ -99,7 +108,8 @@ val benchmark = project.in(file("benchmark"))
   .dependsOn(core, akkaStreams, schemaRegistry, akkaSerializer)
   .enablePlugins(JmhPlugin)
 
-val docs = project.in(file("docs"))
+val docs = project
+  .in(file("docs"))
   .settings(noPublishSettings)
   .settings(commonSettings("docs"))
   .settings(
@@ -118,6 +128,20 @@ val docs = project.in(file("docs"))
     micrositeOrganizationHomepage := "http://vectos.net",
     micrositeAuthor := "Vectos",
     micrositeTwitterCreator := "@mark_dj",
+    micrositeCDNDirectives := CdnDirectives(
+      jsList = List.empty,
+      cssList = List("https://fonts.googleapis.com/css?family=Do Hyeon")
+    ),
+    micrositePalette := Map(
+      "brand-primary" -> "#F39700",
+      "brand-secondary" -> "#000000",
+      "brand-tertiary" -> "#1A1A1A",
+      "gray-dark" -> "#453E46",
+      "gray" -> "#837F84",
+      "gray-light" -> "#E3E2E3",
+      "gray-lighter" -> "#F4F3F4",
+      "white-color" -> "#FFFFFF"
+    ),
     micrositeExtraMdFiles := Map(
       file("CHANGELOG.md") -> ExtraMdFileConfig(
         "changelog.md",
@@ -126,15 +150,19 @@ val docs = project.in(file("docs"))
       )
     )
   )
-  .dependsOn(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)
+  .dependsOn(
+    core,
+    refined,
+    schemaRegistry,
+    schemaRegistryConfluentSttp,
+    schemaRegistryScalacache,
+    akkaStreams,
+    akkaSerializer
+  )
   .enablePlugins(MicrositesPlugin)
 
-
-lazy val noPublishSettings = Seq(
-  publish := {},
-  publishLocal := {},
-  publishArtifact := false
-)
+lazy val noPublishSettings =
+  Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
 def commonSettings(n: String) = Seq(
   name := s"formulation-$n",
@@ -156,24 +184,36 @@ lazy val publishSettings = Seq(
   updateOptions := updateOptions.value.withCachedResolution(true),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   releaseEarlyEnableSyncToMaven := false,
-  developers := List(Developer("mark_dj", "Mark de Jong", "mark@vectos.net", url("http://vectos.net"))),
+  developers := List(
+    Developer(
+      "mark_dj",
+      "Mark de Jong",
+      "mark@vectos.net",
+      url("http://vectos.net")
+    )
+  ),
   homepage := Some(url("https://vectos.net/formulation")),
-  scmInfo := Some(ScmInfo(url("http://github.com/vectos/formulation"), "scm:git:git@github.com:vectos/formulation.git")),
+  scmInfo := Some(
+    ScmInfo(
+      url("http://github.com/vectos/formulation"),
+      "scm:git:git@github.com:vectos/formulation.git"
+    )
+  ),
   releaseEarlyWith := BintrayPublisher,
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   pgpPublicRing := file("./travis/local.pubring.asc"),
   pgpSecretRing := file("./travis/local.secring.asc")
 )
 
-
 def scalacOpts(ver: String) = CrossVersion.partialVersion(ver) match {
   case Some((2, scalaMajor)) if scalaMajor == 12 => scalacOptions212
   case Some((2, scalaMajor)) if scalaMajor == 11 => scalacOptions211
-  case _ => Seq.empty
+  case _                                         => Seq.empty
 }
 
 val scalacOptions211 = Seq(
-  "-encoding", "UTF-8", // yes, this is 2 args
+  "-encoding",
+  "UTF-8", // yes, this is 2 args
   "-feature",
   "-language:existentials",
   "-language:higherKinds",
@@ -189,7 +229,8 @@ val scalacOptions211 = Seq(
 )
 
 val scalacOptions212 = Seq(
-  "-encoding", "utf-8", // Specify character encoding used by source files.
+  "-encoding",
+  "utf-8", // Specify character encoding used by source files.
   "-explaintypes", // Explain type errors in more detail.
   "-feature", // Emit warning and location for usages of features that should be imported explicitly.
   "-language:existentials", // Existential types (besides wildcard types) can be written and inferred
@@ -232,6 +273,15 @@ val scalacOptions212 = Seq(
   "-Ywarn-unused:privates" // Warn if a private member is unused.
 )
 
-val root = project.in(file("."))
+val root = project
+  .in(file("."))
   .settings(commonSettings("root") ++ noPublishSettings)
-  .aggregate(core, refined, schemaRegistry, schemaRegistryConfluentSttp, schemaRegistryScalacache, akkaStreams, akkaSerializer)
+  .aggregate(
+    core,
+    refined,
+    schemaRegistry,
+    schemaRegistryConfluentSttp,
+    schemaRegistryScalacache,
+    akkaStreams,
+    akkaSerializer
+  )

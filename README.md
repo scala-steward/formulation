@@ -1,6 +1,7 @@
+<img src="https://github.com/vectos/formulation/raw/master/docs/src/main/resources/microsite/img/formulation_logo.png" width="156px" height="180px" align="right">
+
 formulation
 ---
-
 
 [![Build Status](https://api.travis-ci.org/vectos/formulation.svg)](https://travis-ci.org/vectos/formulation)
 [![codecov.io](http://codecov.io/github/vectos/formulation/coverage.svg?branch=master)](http://codecov.io/github/vectos/formulation?branch=master)
