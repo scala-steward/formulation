@@ -1,4 +1,3 @@
-<img src="https://github.com/vectos/formulation/raw/master/docs/src/main/resources/microsite/img/formulation_logo.png" align="right">
 
 formulation
 ---
