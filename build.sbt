@@ -124,6 +124,7 @@ val docs = project
     micrositeGitterChannel := false,
     micrositeGithubOwner := "vectos",
     micrositeGithubRepo := "formulation",
+    micrositePushSiteWith := GitHub4s,
     micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
     micrositeOrganizationHomepage := "http://vectos.net",
     micrositeAuthor := "Vectos",
