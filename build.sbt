@@ -172,7 +172,7 @@ def commonSettings(n: String) = Seq(
   crossScalaVersions := Seq("2.11.12", "2.12.6"),
   scalaVersion := "2.12.6",
   scalacOptions := scalacOpts(scalaVersion.value),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10")
 )
 
 lazy val publishSettings = Seq(
