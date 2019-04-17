@@ -20,7 +20,7 @@ val refined = project
   .in(file("refined"))
   .settings(commonSettings("refined"))
   .settings(publishSettings)
-  .settings(libraryDependencies ++= Seq("eu.timepit" %% "refined" % "0.9.4"))
+  .settings(libraryDependencies ++= Seq("eu.timepit" %% "refined" % "0.9.5"))
   .dependsOn(core)
 
 val schemaRegistry = project
