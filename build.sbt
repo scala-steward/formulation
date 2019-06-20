@@ -47,7 +47,7 @@ val schemaRegistryScalacache = project
   .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.cb372" %% "scalacache-core" % "0.26.0"
+      "com.github.cb372" %% "scalacache-core" % "0.28.0"
     )
   )
   .dependsOn(schemaRegistry)
@@ -79,7 +79,7 @@ val tests = project
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.23" % Test,
-      "com.github.cb372" %% "scalacache-caffeine" % "0.26.0" % Test
+      "com.github.cb372" %% "scalacache-caffeine" % "0.28.0" % Test
     )
   )
   .dependsOn(
@@ -114,7 +114,7 @@ val docs = project
   .settings(commonSettings("docs"))
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.cb372" %% "scalacache-caffeine" % "0.26.0"
+      "com.github.cb372" %% "scalacache-caffeine" % "0.28.0"
     ),
     scalacOptions := Seq("-language:higherKinds"),
     micrositeName := "formulation",
