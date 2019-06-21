@@ -7,7 +7,7 @@ val core = project
   .settings(
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "1.6.1",
-      "org.apache.avro" % "avro" % "1.8.2",
+      "org.apache.avro" % "avro" % "1.9.0",
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
     coverageExcludedPackages := "formulation.*RecordN",
