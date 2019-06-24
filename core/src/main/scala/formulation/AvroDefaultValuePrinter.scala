@@ -5,8 +5,8 @@ import java.time.Instant
 import java.util.UUID
 
 import org.apache.avro.{Conversions, LogicalTypes}
-import org.codehaus.jackson.JsonNode
-import org.codehaus.jackson.node._
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node._
 import shapeless.CNil
 
 /**

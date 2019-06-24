@@ -135,14 +135,14 @@ object Boilerplate {
       block"""
         |package formulation
         |
-        |import org.apache.avro.Schema
+        |import org.apache.avro._
         |
         |import scala.collection.JavaConverters._
         |
         |trait AvroSchemaRecordN { self: AvroAlgebra[AvroSchema] =>
         |
         |  private def field[A, B](name: String, member: Member[AvroSchema, A, B]): Schema.Field = {
-        |    val field = new Schema.Field(name, member.typeClass.schema, member.documentation.orNull, member.defaultValue.orNull)
+        |    val field = new FormulationField(name, member.typeClass.schema, member.documentation.orNull, member.defaultValue.orNull, Schema.Field.Order.ASCENDING)
         |    member.aliases.foreach(alias => field.addAlias(alias))
         |    field
         |  }
@@ -223,7 +223,7 @@ object Boilerplate {
       block"""
         |package formulation
         |
-        |import org.codehaus.jackson.node._
+        |import com.fasterxml.jackson.databind.node._
         |
         |trait AvroDefaultValuePrinterRecordN { self: AvroAlgebra[AvroDefaultValuePrinter] =>
         -  def record$arity[${`A..N`}, Z](namespace: String, name: String)(f: (${`A..N`}) => Z)($params): AvroDefaultValuePrinter[Z] = AvroDefaultValuePrinter.create { case v => val r = new ObjectNode(JsonNodeFactory.instance); $applies; r }

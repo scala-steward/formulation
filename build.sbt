@@ -7,7 +7,8 @@ val core = project
   .settings(
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "1.6.1",
-      "org.apache.avro" % "avro" % "1.8.2",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9",
+      "org.apache.avro" % "avro" % "1.9.0",
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
     coverageExcludedPackages := "formulation.*RecordN",
@@ -102,7 +103,7 @@ val benchmark = project
       "io.circe" %% "circe-core" % "0.9.0",
       "io.circe" %% "circe-generic" % "0.9.0",
       "io.circe" %% "circe-parser" % "0.9.0",
-      "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.0"
+      "com.sksamuel.avro4s" %% "avro4s-core" % "2.0.4"
     )
   )
   .dependsOn(core, akkaStreams, schemaRegistry, akkaSerializer)

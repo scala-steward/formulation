@@ -1,10 +1,10 @@
 package formulation
 
 import cats.{Invariant, ~>}
+import com.fasterxml.jackson.databind.JsonNode
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.{BinaryDecoder, BinaryEncoder}
-import org.codehaus.jackson.JsonNode
 import shapeless.ops.coproduct.Align
 import shapeless.{Coproduct, Generic}
 

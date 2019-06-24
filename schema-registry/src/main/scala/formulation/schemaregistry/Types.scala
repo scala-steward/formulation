@@ -9,7 +9,6 @@ import formulation.{Avro, AvroDecodeContext, AvroDecodeFailure, AvroDecoder, Avr
 import org.apache.avro.Schema
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 final class SchemaRegistry[F[_]] private(client: SchemaRegistryClient[F])(implicit M: MonadError[F, Throwable]) {
 
