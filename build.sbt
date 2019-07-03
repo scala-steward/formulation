@@ -7,7 +7,7 @@ val core = project
   .settings(
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "1.6.1",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9.1",
       "org.apache.avro" % "avro" % "1.9.0",
       "com.chuusai" %% "shapeless" % "2.3.3"
     ),
